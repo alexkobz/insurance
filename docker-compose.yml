@@ -1,0 +1,19 @@
+services:
+    insurance:
+        container_name: insurance
+        build: ./
+        image: insurance:latest
+        env_file:
+            - .venv/.env
+        secrets:
+            - PASSWORD
+        volumes:
+            - insurance_volume:/insurance_volume/
+
+
+volumes:
+    insurance_volume:
+
+secrets:
+    PASSWORD:
+        file: .venv/.env
