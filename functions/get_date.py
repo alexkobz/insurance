@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date as d, timedelta
 import pandas as pd
 import requests
 
@@ -31,4 +31,4 @@ import requests
 #     return last_work_day_month.strftime("%Y-%m-%d")
 
 
-DATE = "2024-08-30"
+DATE = pd.to_datetime(d.today() - timedelta(days=14) + pd.offsets.MonthEnd(n=1)).strftime("%Y-%m-%d")

@@ -3,6 +3,7 @@ services:
         container_name: insurance
         build: ./
         image: insurance:latest
+        restart: on-failure
         env_file:
             - .venv/.env
         secrets:

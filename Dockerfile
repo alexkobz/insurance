@@ -7,7 +7,8 @@ COPY requirements.txt .
 
 RUN python -m pip install -U pip
 RUN python -m pip install --no-cache-dir -r requirements.txt
-RUN python -m pip install jupyter
+RUN python -m pip install ipython ipykernel jupyter
+RUN ipython kernel install --name "py38" --user
 
 COPY . .
 

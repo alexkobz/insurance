@@ -16,8 +16,7 @@ class RequestType(IntEnum):
     REGULAR = 1
     PAGES = 2
     FintoolReferenceData = 3
-    IDS = 4
-    CompanyRatingsTable = 6
+    FININSTID = 6
     SecurityRatingTable = 7
     CurrencyRate = 8
     FINTOOLIDS = 9
@@ -159,7 +158,7 @@ class CompanyRatingsTable(Request):
     Получить рейтинги нескольких компаний на заданную дату.
     """
     url: str = "https://dh2.efir-net.ru/v2/Rating/CompanyRatingsTable"
-    requestType: RequestType = RequestType.CompanyRatingsTable
+    requestType: RequestType = RequestType.FININSTID
     count: int = 10000000
     ids: List[CompanyId] = field(default_factory=lambda: [CompanyId({"id": 0, "idType": "FININSTID"})]) # Идентификатор эмитента
     date: str = DATE
