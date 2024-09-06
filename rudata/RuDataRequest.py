@@ -2,9 +2,12 @@ import asyncio
 import aiohttp
 from time import sleep
 from typing import Dict
+
+from logger.Logger import Logger
 from rudata.DocsAPI import LIMIT
 from rudata.Token import Token
 
+logger = Logger()
 
 class RuDataRequest:
     """
@@ -29,20 +32,25 @@ class RuDataRequest:
         RuDataRequest.headers["Authorization"] = 'Bearer ' + token
 
     async def post(self, payload):
+        logger.info("post start")
         async with RuDataRequest.semaphore, self.session.post(
                 self.url,
                 json=payload,
                 headers=RuDataRequest.headers,
-                timeout=3600
+                timeout=600
         ) as response:
+            logger.info("post processing")
             if response.ok:
                 try:
                     response_body = await response.json()
+                    logger.info("sleep 1")
                     await asyncio.sleep(1)
-                except aiohttp.client_exceptions.ClientConnectorError:
+                except aiohttp.client_exceptions.ClientConnectorError as e:
+                    logger.exception(str(e))
                     sleep(10)
                     raise ConnectionError("Restart")
-                except Exception:
+                except Exception as e:
+                    logger.exception(str(e))
                     sleep(60)
                     raise Exception("Restart")
                 finally:

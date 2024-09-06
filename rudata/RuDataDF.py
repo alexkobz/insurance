@@ -14,6 +14,7 @@ from rudata.Token import Token
 from rudata.SavedDF import FintoolReferenceData, Emitents, Calendar
 from functions.divide_chunks import divide_chunks
 
+logger = Logger()
 
 class RuDataDF:
 
@@ -74,8 +75,9 @@ class RuDataDF:
                     tasks: List[asyncio.Task] = [asyncio.create_task(
                         RuDataRequest(self._url, session).post(payload=payload)
                     ) for payload in chunk]
-                    resAll: List[List[dict]] = [await task for task in asyncio.as_completed(tasks, timeout=7200)]
+                    resAll: List[List[dict]] = [await task for task in asyncio.as_completed(tasks, timeout=600)]
                     result: List[dict] = [row for task_res in resAll for row in task_res]
+                    logger.info(f"{len(result)}, {len(self._list_json)}")
                     if result or self._requestType not in (DocsAPI.RequestType.PAGES,
                                                             DocsAPI.RequestType.FintoolReferenceData):
                         self._list_json.extend(result)
@@ -156,7 +158,7 @@ class RuDataDF:
         if Token.instance is None:
             RuDataRequest.set_headers()
 
-        self._df = asyncio.run(self._get_df())
+        self._df: pd.DataFrame = asyncio.run(self._get_df())
 
         if self.key == "FintoolReferenceData":
             FintoolReferenceData.instance = self._df
