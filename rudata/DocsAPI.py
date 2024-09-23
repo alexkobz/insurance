@@ -5,7 +5,9 @@ https://docs.efir-net.ru/dh2/#/
 from typing import Type, List
 from dataclasses import dataclass, field
 from enum import IntEnum
-from functions.get_date import DATE
+from datetime import datetime as dt, timedelta
+
+from functions.get_date import DATE, MOEX_DATE
 
 
 # Ограничение по запросам в секунду
@@ -173,7 +175,7 @@ class SecurityRatingTable(Request):
     Получить рейтинги нескольких бумаг и связанных с ними компаний на заданную дату.
     """
     url: str = "https://dh2.efir-net.ru/v2/Rating/SecurityRatingTable"
-    requestType: RequestType = RequestType.SecurityRatingTable
+    requestType: RequestType = RequestType.ISIN
     count: int = 10000000
     ids: List[str] = field(default_factory=lambda: [])  # Идентификаторы бумаг – ISIN, рег.коды (обязательный).
     date: str = DATE
@@ -245,7 +247,7 @@ class RUPriceHistory(Request):
     url: str = "https://dh2.efir-net.ru/v2/RUPrice/History"
     requestType: RequestType = RequestType.PAGES
     ids: List[int] = field(default_factory=lambda: [])
-    dateFrom: str = DATE
+    dateFrom: str = (dt.strptime(DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
     dateTo: str = DATE
     pageNum: int = 1
     pageSize: int = 1000
@@ -333,3 +335,67 @@ class FloaterData(Request):
     requestType: RequestType = RequestType.FINTOOLIDS
     fintoolIds: List[int] = field(default_factory=lambda: [])
     date: str = DATE
+
+
+@dataclass
+class HistoryStockBonds(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "stock"
+    market: str = "bonds"
+    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = MOEX_DATE
+    pageNum: int = 1
+    pageSize: int = 1000
+
+
+@dataclass
+class HistoryStockShares(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "stock"
+    market: str = "shares"
+    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = MOEX_DATE
+    pageNum: int = 1
+    pageSize: int = 1000
+
+
+@dataclass
+class HistoryStockNdm(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "stock"
+    market: str = "ndm"
+    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = MOEX_DATE
+    pageNum: int = 1
+    pageSize: int = 1000
+
+
+@dataclass
+class HistoryStockCcp(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "stock"
+    market: str = "ccp"
+    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = MOEX_DATE
+    pageNum: int = 1
+    pageSize: int = 1000

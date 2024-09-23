@@ -132,14 +132,6 @@ class RuDataDF:
         elif self._requestType == DocsAPI.RequestType.FINTOOLIDS:
             self._ids: List[int] = FintoolReferenceData().get_fintool()
             await get_response_ids("fintoolIds")
-        elif self._requestType == DocsAPI.RequestType.ISIN:
-            self._ids: List[str] = FintoolReferenceData().get_isin()
-            payloads: List[dict] = []
-            payload: Dict[str, Any] = self._payload.copy()
-            for id in self._ids:
-                payload["isin"] = id
-                payloads.append(payload.copy())
-            await create_execute_tasks(payloads)
         elif self._requestType == DocsAPI.RequestType.REGULAR:
             async with aiohttp.ClientSession(
                     connector=aiohttp.TCPConnector(limit=DocsAPI.LIMIT,

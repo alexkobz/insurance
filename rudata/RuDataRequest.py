@@ -37,7 +37,8 @@ class RuDataRequest:
                 self.url,
                 json=payload,
                 headers=RuDataRequest.headers,
-                timeout=600
+                timeout=600,
+                # verify=True
         ) as response:
             logger.info("post processing")
             if response.ok:

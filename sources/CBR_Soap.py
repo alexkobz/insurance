@@ -186,7 +186,7 @@ class CBR_Soap:
         data.sort_index(inplace=True)
         return data
 
-    def get_discounts(self, currency, date):
+    def get_discounts(self, currency="RUB", date=""):
         self.operation = 'IDRepo' + currency + 'XML'
         self.args = [date]
         self.make_xml_param_string(self.operation)
