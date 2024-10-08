@@ -1,0 +1,19 @@
+FROM python:3.8
+LABEL authors="alexkobz"
+
+RUN pip install jupyter
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY data data
+COPY functions functions
+COPY logger logger
+COPY rudata rudata
+COPY sources sources
+COPY prices.ipynb .
+
+RUN chmod +x prices.ipynb
+
+RUN touch /var/log/cron.log
+
+CMD ["sh", "-c", "printenv > /etc/environment; /usr/local/bin/jupyter execute ~/../prices.ipynb >> /var/log/cron.log 2>&1"]

@@ -4,10 +4,10 @@ https://docs.efir-net.ru/dh2/#/
 
 from typing import Type, List
 from dataclasses import dataclass, field
-from enum import IntEnum
+from enum import Enum, IntEnum
 from datetime import datetime as dt, timedelta
 
-from functions.get_date import DATE, MOEX_DATE
+from functions.get_date import last_day_month_str, last_work_date_month, last_work_date_month_str
 
 
 # Ограничение по запросам в секунду
@@ -126,7 +126,7 @@ class OfferorsGuarants(Request):
     url: str = "https://dh2.efir-net.ru/v2/Bond/OfferorsGuarants"
     requestType: RequestType = RequestType.PAGES
     fintoolIds: List[int] = field(default_factory=lambda: [])
-    date: str = DATE
+    date: str = last_day_month_str
     pageNum: int = 1
     pageSize: int = 100
 
@@ -163,7 +163,7 @@ class CompanyRatingsTable(Request):
     requestType: RequestType = RequestType.FININSTID
     count: int = 10000000
     ids: List[CompanyId] = field(default_factory=lambda: [CompanyId({"id": 0, "idType": "FININSTID"})]) # Идентификатор эмитента
-    date: str = DATE
+    date: str = last_day_month_str
     companyName: str = ""
     filter: str = ""
 
@@ -175,10 +175,10 @@ class SecurityRatingTable(Request):
     Получить рейтинги нескольких бумаг и связанных с ними компаний на заданную дату.
     """
     url: str = "https://dh2.efir-net.ru/v2/Rating/SecurityRatingTable"
-    requestType: RequestType = RequestType.ISIN
+    requestType: RequestType = RequestType.SecurityRatingTable
     count: int = 10000000
     ids: List[str] = field(default_factory=lambda: [])  # Идентификаторы бумаг – ISIN, рег.коды (обязательный).
-    date: str = DATE
+    date: str = last_day_month_str
 
 
 @dataclass
@@ -191,7 +191,7 @@ class CurrencyRate(Request):
     requestType: RequestType = RequestType.CurrencyRate
     from_: str = ""
     to: str = "RUB"
-    date: str = DATE
+    date: str = last_day_month_str
 
 
 @dataclass
@@ -205,7 +205,7 @@ class CurrencyRateHistory(Request):
     baseCurrency: str = "RUB"
     quotedCurrency: str = ""
     dateFrom: str = ""
-    dateTo: str = DATE
+    dateTo: str = last_day_month_str
     withHolidays: bool = True
     pageNum: int = 1
     pageSize: int = 100
@@ -235,7 +235,7 @@ class AccruedInterestOnDate(Request):
     url: str = "https://dh2.efir-net.ru/v2/AccruedInterest/AccruedInterestOnDate"
     requestType: RequestType = RequestType.FINTOOLIDS
     fintoolIds: List[int] = field(default_factory=lambda: [])  # Идентификаторы инструментов в базе Интерфакс
-    cashFlowCalcDate: str = DATE  # Дата расчета. Необязательный.
+    cashFlowCalcDate: str = last_day_month_str  # Дата расчета. Необязательный.
 
 
 @dataclass
@@ -247,8 +247,8 @@ class RUPriceHistory(Request):
     url: str = "https://dh2.efir-net.ru/v2/RUPrice/History"
     requestType: RequestType = RequestType.PAGES
     ids: List[int] = field(default_factory=lambda: [])
-    dateFrom: str = (dt.strptime(DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = DATE
+    dateFrom: str = (dt.strptime(last_day_month_str, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_day_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -262,7 +262,7 @@ class EndOfDay(Request):
     url: str = "https://dh2.efir-net.ru/v2/Archive/EndOfDay"
     requestType: RequestType = RequestType.ISIN
     isin: str = ""
-    date: str = DATE
+    date: str = last_day_month_str
     dateType: str = "LAST_TRADE_DATE"
     fields: List[str] = field(default_factory=lambda: [])
 
@@ -281,7 +281,7 @@ class Calendar(Request):
     eventTypes: List[str] = field(default_factory=lambda: [])
     fields: List[str] = field(default_factory=lambda: [])
     startDate: str = field(default_factory=lambda: "")
-    endDate: str = DATE
+    endDate: str = last_day_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -334,7 +334,7 @@ class FloaterData(Request):
     url: str = "https://dh2.efir-net.ru/v2/Bond/FloaterData"
     requestType: RequestType = RequestType.FINTOOLIDS
     fintoolIds: List[int] = field(default_factory=lambda: [])
-    date: str = DATE
+    date: str = last_day_month_str
 
 
 @dataclass
@@ -347,8 +347,8 @@ class HistoryStockBonds(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "bonds"
-    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = MOEX_DATE
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -363,8 +363,8 @@ class HistoryStockShares(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "shares"
-    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = MOEX_DATE
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -379,8 +379,8 @@ class HistoryStockNdm(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "ndm"
-    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = MOEX_DATE
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -395,7 +395,7 @@ class HistoryStockCcp(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "ccp"
-    dateFrom: str = (dt.strptime(MOEX_DATE, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = MOEX_DATE
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000

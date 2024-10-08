@@ -1,0 +1,12 @@
+#SHELL=/bin/bash
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- DAY of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * USER-NAMe command to be executed
+
+0 3 1 * * /usr/local/bin/jupyter execute ~/../ratings.ipynb >> /var/log/cron.log 2>&1
