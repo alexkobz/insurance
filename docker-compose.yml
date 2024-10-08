@@ -1,20 +1,27 @@
 services:
-    insurance:
-        container_name: insurance
-        build: ./
-        image: insurance:latest
+    schedule:
+        container_name: insurance_schedule
+        build:
+            context: ./
+            dockerfile: Dockerfile.schedule
+        restart: on-failure
+        env_file:
+            - .env
+        volumes:
+            - insurance_volume:/data
+
+    prices:
+        container_name: insurance_prices
+        build:
+            context: .
+            dockerfile: Dockerfile.prices
         restart: on-failure
         env_file:
             - .venv/.env
-        secrets:
-            - PASSWORD
         volumes:
-            - insurance_volume:/insurance_volume/
+            - insurance_volume:/data
 
 
 volumes:
     insurance_volume:
-
-secrets:
-    PASSWORD:
-        file: .venv/.env
+        external: true

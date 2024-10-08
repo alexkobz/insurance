@@ -1,4 +1,6 @@
 import asyncio
+import os
+
 import aiohttp
 from time import sleep
 from typing import Dict
@@ -23,11 +25,13 @@ class RuDataRequest:
     semaphore: asyncio.Semaphore = asyncio.Semaphore(LIMIT)
 
     def __init__(self, url: str, session: aiohttp.ClientSession):
+        Logger().info(os.environ)
         self.url: str = url
         self.session: aiohttp.ClientSession = session
 
     @staticmethod
     def set_headers() -> None:
+        Logger().info(os.environ)
         token: str = str(Token())
         RuDataRequest.headers["Authorization"] = 'Bearer ' + token
 
@@ -37,18 +41,21 @@ class RuDataRequest:
                 self.url,
                 json=payload,
                 headers=RuDataRequest.headers,
-                timeout=600
+                timeout=60
         ) as response:
             logger.info("post processing")
             if response.ok:
                 try:
                     response_body = await response.json()
-                    logger.info("sleep 1")
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1.1)
                 except aiohttp.client_exceptions.ClientConnectorError as e:
                     logger.exception(str(e))
                     sleep(10)
                     raise ConnectionError("Restart")
+                except asyncio.exceptions.TimeoutError as e:
+                    logger.exception(str(e))
+                    sleep(10)
+                    await self.post(payload)
                 except Exception as e:
                     logger.exception(str(e))
                     sleep(60)
