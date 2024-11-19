@@ -335,6 +335,7 @@ class FloaterData(Request):
     requestType: RequestType = RequestType.FINTOOLIDS
     fintoolIds: List[int] = field(default_factory=lambda: [])
     date: str = last_day_month_str
+    showFuturePeriods: bool = True
 
 
 @dataclass

@@ -77,7 +77,6 @@ class RuDataDF:
                     ) for payload in chunk]
                     resAll: List[List[dict]] = [await task for task in asyncio.as_completed(tasks, timeout=600)]
                     result: List[dict] = [row for task_res in resAll for row in task_res]
-                    logger.info(f"{len(result)}, {len(self._list_json)}")
                     if result or self._requestType not in (DocsAPI.RequestType.PAGES,
                                                             DocsAPI.RequestType.FintoolReferenceData):
                         self._list_json.extend(result)
