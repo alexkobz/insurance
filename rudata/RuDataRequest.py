@@ -25,25 +25,21 @@ class RuDataRequest:
     semaphore: asyncio.Semaphore = asyncio.Semaphore(LIMIT)
 
     def __init__(self, url: str, session: aiohttp.ClientSession):
-        Logger().info(os.environ)
         self.url: str = url
         self.session: aiohttp.ClientSession = session
 
     @staticmethod
     def set_headers() -> None:
-        Logger().info(os.environ)
         token: str = str(Token())
         RuDataRequest.headers["Authorization"] = 'Bearer ' + token
 
     async def post(self, payload):
-        logger.info("post start")
         async with RuDataRequest.semaphore, self.session.post(
                 self.url,
                 json=payload,
                 headers=RuDataRequest.headers,
                 timeout=60
         ) as response:
-            logger.info("post processing")
             if response.ok:
                 try:
                     response_body = await response.json()

@@ -25,11 +25,9 @@ class Token:
         self._instance.__initialized = True
         self.__url = getattr(DocsAPI, "Account").url
         self.__payload = getattr(DocsAPI, "Account")().payload()
-        # load_dotenv('.venv/.env')
+        load_dotenv('.venv/.env')
         self.__payload["login"] = os.environ["LOGIN"]
         self.__payload["password"] = os.environ["PASSWORD"]
-        # self.__payload["login"] = login
-        # self.__payload["password"] = password
         self._token_str: str = ""
 
     @staticmethod
