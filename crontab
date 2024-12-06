@@ -9,4 +9,4 @@
 # |  |  |  |  |
 # *  *  *  *  * USER-NAMe command to be executed
 
-0 3 2 * * /usr/local/bin/jupyter execute ~/../ratings.ipynb >> /var/log/cron.log 2>&1; /usr/local/bin/jupyter execute ~/../cash_flow.ipynb >> /var/log/cron.log 2>&1
+0 2 2 * * /usr/local/bin/jupyter execute ~/../ratings.ipynb >> /var/log/cron.log 2>&1; /usr/local/bin/jupyter execute ~/../cash_flows.ipynb >> /var/log/cron.log 2>&1
