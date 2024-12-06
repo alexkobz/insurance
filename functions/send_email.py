@@ -10,7 +10,7 @@ from functions.get_date import last_day_month
 
 
 def main(*filenames):
-    load_dotenv('.venv/.env')
+    # load_dotenv('.venv/.env')
     sender_email = os.environ["LOGIN_EMAIL"]
     receiver_email = os.environ["LOGIN_EMAIL"]
     subject = ' '.join(filenames)
