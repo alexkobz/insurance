@@ -1,4 +1,5 @@
 services:
+
   postgres:
     image: postgres:16
     container_name: insurance-postgres-db

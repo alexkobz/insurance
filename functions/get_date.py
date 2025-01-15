@@ -6,6 +6,7 @@ import requests
 
 from rudata.RuDataDF import RuDataDF
 
+# for manual run change the varibale last_day_month: date = date(1970, 1, 1)
 last_day_month: date = pd.to_datetime(date.today() - timedelta(days=28) + pd.offsets.MonthEnd(n=1))
 
 def get_last_work_date_month() -> date:
