@@ -24,10 +24,7 @@ def get_last_work_date_month() -> date:
         """
         , RuDataDF.engine
     )
-    if last_day_month.year in holidays['holiday_year'].tolist():
-        while last_day_month_copy in holidays['holiday_date']:
-            last_day_month_copy -= timedelta(days=1)
-    else:
+    if not last_day_month.year in holidays['holiday_year'].tolist():
         url = f"https://xmlcalendar.ru/data/ru/{last_day_month.year}/calendar.txt"
         holidays_request = requests.get(
             url,
@@ -44,8 +41,8 @@ def get_last_work_date_month() -> date:
             con=RuDataDF.engine,
             if_exists='append',
             index=False)
-        while last_day_month_copy in holidays['holiday_date']:
-            last_day_month_copy -= timedelta(days=1)
+    while last_day_month_copy in holidays['holiday_date']:
+        last_day_month_copy -= timedelta(days=1)
     return last_day_month_copy
 
 

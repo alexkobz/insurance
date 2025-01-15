@@ -238,7 +238,7 @@ class RuDataDF:
             sleep(1)
             return self._df
         else:
-            return df
+            return df.loc[:, df.columns != 'report_monthyear']
 
     @df.setter
     def df(self, value) -> None:

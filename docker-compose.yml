@@ -17,12 +17,12 @@ services:
     restart: always
     extra_hosts:
       - "host.docker.internal:host-gateway"
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '0.01'
-#        reservations:
-#          cpus: '0.01'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.01'
+        reservations:
+          cpus: '0.01'
 
   schedule:
     container_name: insurance_schedule
