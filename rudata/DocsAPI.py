@@ -18,6 +18,8 @@ class RequestType(IntEnum):
     REGULAR = 1
     PAGES = 2
     FintoolReferenceData = 3
+    INNS = 4
+    CompanyGroups = 5
     FININSTID = 6
     SecurityRatingTable = 7
     CurrencyRate = 8
@@ -348,8 +350,8 @@ class HistoryStockBonds(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "bonds"
-    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = last_work_date_month_str
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -364,8 +366,8 @@ class HistoryStockShares(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "shares"
-    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = last_work_date_month_str
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -380,8 +382,8 @@ class HistoryStockNdm(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "ndm"
-    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = last_work_date_month_str
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -396,7 +398,176 @@ class HistoryStockCcp(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "ccp"
-    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
-    dateTo: str = last_work_date_month_str
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
     pageNum: int = 1
     pageSize: int = 1000
+
+
+@dataclass
+class HistoryStockIndex(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "stock"
+    market: str = "index"
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    pageNum: int = 1
+    pageSize: int = 1000
+
+
+@dataclass
+class HistoryStockForeignShares(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "stock"
+    market: str = "foreignshares"
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    pageNum: int = 1
+    pageSize: int = 1000
+
+
+@dataclass
+class HistoryFuturesOptions(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "futures"
+    market: str = "options"
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    pageNum: int = 1
+    pageSize: int = 1000
+
+
+@dataclass
+class HistoryFuturesForts(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "futures"
+    market: str = "forts"
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    pageNum: int = 1
+    pageSize: int = 1000
+
+    
+@dataclass
+class HistoryCurrencyForts(Request): #does not work
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "currency"
+    market: str = "forts"
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    pageNum: int = 1
+    pageSize: int = 1000
+
+    
+@dataclass
+class HistoryCurrencyFutures(Request): #does not work
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/History
+    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
+    requestType: RequestType = RequestType.PAGES
+    engine: str = "currency"
+    market: str = "futures"
+    dateFrom: str = "1900-01-01"
+    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    pageNum: int = 1
+    pageSize: int = 1000
+
+    
+@dataclass
+class AffiliateTypes(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Affiliate/types
+    Возвращает справочник типов аффилированности    
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Affiliate/types"
+    requestType: RequestType = RequestType.REGULAR
+
+
+@dataclass
+class CompanyGroupMembers(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Affiliate/CompanyGroupMembers
+    Получить информацию о принадлежности компаний к группам компаний
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Affiliate/CompanyGroupMembers"
+    requestType: RequestType = RequestType.INNS
+    memberInns: List[str] = field(default_factory=lambda: [])
+    actualDate: str = last_day_month_str
+
+
+@dataclass
+class CompanyGroups(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Affiliate/CompanyGroups
+    Получить состав групп по идентификаторам групп
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Affiliate/CompanyGroups"
+    requestType: RequestType = RequestType.CompanyGroups
+    groupIds: List[int] = field(default_factory=lambda: [])
+    actualDate: str = last_day_month_str
+    pageNum: int = 1
+    pageSize: int = 1000
+
+
+@dataclass
+class CompanyGroupRelations(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Affiliate/CompanyGroupRelations
+    Возвращает описание отношений в группах компаний
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Affiliate/CompanyGroupRelations"
+    requestType: RequestType = RequestType.PAGES
+    actualDate: str = last_day_month_str
+    pageNum: int = 1
+    pageSize: int = 100
+
+
+@dataclass
+class MoexStocks(Request):
+    """
+    https://docs.efir-net.ru/v2/Moex/Stocks
+    Возвращает краткое описание ценных бумаг фондового рынка
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Moex/Stocks"
+    requestType: RequestType = RequestType.PAGES
+    pageNum: int = 1
+    pageSize: int = 300
+
+
+@dataclass
+class NsdCommonData(Request):
+    """
+    https://docs.efir-net.ru/v2/Moex/Stocks
+    Возвращает краткое описание ценных бумаг фондового рынка
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Nsd/CommonData"
+    requestType: RequestType = RequestType.PAGES
+    pageNum: int = 1
+    pageSize: int = 100

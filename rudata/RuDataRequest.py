@@ -1,5 +1,4 @@
 import asyncio
-import os
 
 import aiohttp
 from time import sleep

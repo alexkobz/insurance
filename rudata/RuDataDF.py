@@ -1,5 +1,7 @@
 from __future__ import annotations
 import asyncio
+import os
+
 import aiohttp
 import socket
 import pandas as pd
@@ -7,16 +9,47 @@ from typing import List, Union, Optional, Dict, Any
 from inspect import currentframe
 from time import sleep
 from datetime import datetime
+
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.engine.mock import MockConnection
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.sql import text as sa_text
+
+from functions.path import get_project_root, Path
+from functions.get_date import last_day_month
 from logger.Logger import Logger
 from rudata import DocsAPI
 from rudata.RuDataRequest import RuDataRequest
 from rudata.Token import Token
-from rudata.SavedDF import FintoolReferenceData, Emitents, Calendar
 from functions.divide_chunks import divide_chunks
 
 logger = Logger()
 
 class RuDataDF:
+
+    env_path: Path = Path.joinpath(get_project_root(), '.venv/.env')
+    load_dotenv(env_path)
+    try:
+        DATABASE_URI: str = (
+            f"postgresql://"
+            f"{os.environ['POSTGRES_USER']}:"
+            f"{os.environ['POSTGRES_PASSWORD']}@"
+            f"{os.environ['POSTGRES_HOST']}:"
+            f"{os.environ['POSTGRES_PORT']}/"
+            f"{os.environ['POSTGRES_DATABASE']}")
+        engine: MockConnection = create_engine(DATABASE_URI)
+        engine.execute(sa_text(f'''SELECT 1''').execution_options(autocommit=True))
+    except SQLAlchemyError:
+        DATABASE_URI: str = (
+            f"postgresql://"
+            f"{os.environ['POSTGRES_USER']}:"
+            f"{os.environ['POSTGRES_PASSWORD']}@"
+            f"localhost:"
+            f"{os.environ['POSTGRES_PORT']}/"
+            f"{os.environ['POSTGRES_DATABASE']}")
+        engine: MockConnection = create_engine(DATABASE_URI)
+    report_monthyear: str = last_day_month.strftime("%m%Y")
 
     def __init__(self, key=None):
         if key:
@@ -31,6 +64,7 @@ class RuDataDF:
             self._to = None
             self._list_json: List[dict] = []
             self._df: pd.DataFrame = pd.DataFrame()
+
 
     # No usage
     def set_date(self, date=datetime.today().strftime("%Y-%m-%d")):
@@ -123,13 +157,43 @@ class RuDataDF:
                     payloads.append(payload.copy())
                 asyncio.run(create_execute_tasks(payloads))
         elif self._requestType == DocsAPI.RequestType.FININSTID:
-            self._ids: List[int] = Emitents().get_fininst()
+            self._ids: List[int] = (
+                pd.read_sql(
+                    """
+                    SELECT DISTINCT fininstid
+                    FROM "Emitents"
+                    WHERE report_monthyear = '{RuDataDF.report_monthyear}'
+                    """
+                    , self.engine
+                )['fininstid']
+                .to_list()
+            )
             await get_response_ids("ids")
         elif self._requestType == DocsAPI.RequestType.SecurityRatingTable:
-            self._ids: List[str] = FintoolReferenceData().get_isin()
+            self._ids: List[int] = (
+                pd.read_sql(
+                    """
+                    SELECT DISTINCT isincode
+                    FROM "FintoolReferenceData"
+                    WHERE report_monthyear = '{RuDataDF.report_monthyear}'
+                    """
+                    , self.engine
+                )['isincode']
+                .to_list()
+            )
             await get_response_ids("ids")
         elif self._requestType == DocsAPI.RequestType.FINTOOLIDS:
-            self._ids: List[int] = FintoolReferenceData().get_fintool()
+            self._ids: List[int] = (
+                pd.read_sql(
+                    """
+                    SELECT DISTINCT fintoolid
+                    FROM "FintoolReferenceData"
+                    WHERE report_monthyear = '{RuDataDF.report_monthyear}'
+                    """
+                    , self.engine
+                )['fintoolid']
+                .to_list()
+            )
             await get_response_ids("fintoolIds")
         elif self._requestType == DocsAPI.RequestType.REGULAR:
             async with aiohttp.ClientSession(
@@ -146,20 +210,35 @@ class RuDataDF:
     @property
     @Logger.logDF
     def df(self) -> pd.DataFrame:
-        if Token.instance is None:
-            RuDataRequest.set_headers()
 
-        self._df: pd.DataFrame = asyncio.run(self._get_df())
+        try:
+            df: pd.DataFrame = pd.read_sql(
+                    f"""
+                    SELECT *
+                    FROM "{self.key}"
+                    where report_monthyear = '{RuDataDF.report_monthyear}'
+                    """
+                    , RuDataDF.engine
+                )
+        except SQLAlchemyError:
+            df: pd.DataFrame = pd.DataFrame()
+        if df.empty:
+            if Token.instance is None:
+                RuDataRequest.set_headers()
 
-        if self.key == "FintoolReferenceData":
-            FintoolReferenceData.instance = self._df
-        elif self.key == "Emitents":
-            Emitents.instance = self._df
-        elif self.key == "CalendarV2":
-            Calendar.instance = self._df
+            self._df: pd.DataFrame = asyncio.run(self._get_df())
 
-        sleep(1)
-        return self._df
+            to_postgres_df = self._df.copy()
+            to_postgres_df['report_monthyear'] = RuDataDF.report_monthyear
+            to_postgres_df.to_sql(
+                name=self.key,
+                con=RuDataDF.engine,
+                if_exists='append',
+                index=False)
+            sleep(1)
+            return self._df
+        else:
+            return df
 
     @df.setter
     def df(self, value) -> None:
