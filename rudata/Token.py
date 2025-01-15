@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from time import sleep
 from typing import Dict
 
+from functions.path import get_project_root, Path
 from rudata import DocsAPI
 from logger.Logger import Logger
 
@@ -25,11 +26,10 @@ class Token:
         self._instance.__initialized = True
         self.__url = getattr(DocsAPI, "Account").url
         self.__payload = getattr(DocsAPI, "Account")().payload()
-        # load_dotenv('.venv/.env')
+        env_path: Path = Path.joinpath(get_project_root(), '.venv/.env')
+        load_dotenv(env_path)
         self.__payload["login"] = os.environ["LOGIN"]
         self.__payload["password"] = os.environ["PASSWORD"]
-        # self.__payload["login"] = login
-        # self.__payload["password"] = password
         self._token_str: str = ""
 
     @staticmethod

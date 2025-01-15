@@ -1,27 +1,67 @@
 services:
-    schedule:
-        container_name: insurance_schedule
-        build:
-            context: ./
-            dockerfile: Dockerfile.schedule
-        restart: on-failure
-        env_file:
-            - .env
-        volumes:
-            - insurance_volume:/data
+  postgres:
+    image: postgres:16
+    container_name: insurance-postgres-db
+    env_file:
+      - .venv/.env
+    volumes:
+      - insurance_postgres_volume:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 24h
+      retries: 5
+      start_period: 5s
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.01'
+#        reservations:
+#          cpus: '0.01'
 
-    prices:
-        container_name: insurance_prices
-        build:
-            context: .
-            dockerfile: Dockerfile.prices
-        restart: on-failure
-        env_file:
-            - .venv/.env
-        volumes:
-            - insurance_volume:/data
+  schedule:
+    container_name: insurance_schedule
+    build:
+      context: ./
+      dockerfile: Dockerfile.schedule
+    restart: on-failure
+    env_file:
+      - .venv/.env
+    volumes:
+      - insurance_volume:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+        reservations:
+          cpus: '0.1'
+    depends_on:
+      - postgres
 
+  prices:
+    container_name: insurance_prices
+    build:
+      context: .
+      dockerfile: Dockerfile.prices
+    restart: on-failure
+    env_file:
+      - .venv/.env
+    volumes:
+      - insurance_volume:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+        reservations:
+          cpus: '0.1'
+    depends_on:
+      - postgres
 
 volumes:
-    insurance_volume:
-        external: true
+  insurance_postgres_volume:
+  insurance_volume:
+    external: true
