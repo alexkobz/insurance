@@ -18,13 +18,14 @@ def get_last_work_date_month() -> date:
     """
     last_day_month_copy = last_day_month
     holidays = pd.read_sql(
-        """
-        SELECT holiday_date, holiday_year
+        f"""
+        SELECT holiday_date
         FROM holidays
+        WHERE holiday_year = {last_day_month.year}
         """
         , RuDataDF.engine
     )
-    if not last_day_month.year in holidays['holiday_year'].tolist():
+    if holidays.empty:
         url = f"https://xmlcalendar.ru/data/ru/{last_day_month.year}/calendar.txt"
         holidays_request = requests.get(
             url,
