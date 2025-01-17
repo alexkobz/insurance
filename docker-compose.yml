@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:16
     container_name: insurance-postgres-db
@@ -11,7 +10,7 @@ services:
       - "5433:5432"
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
-      interval: 24h
+      interval: 10s
       retries: 5
       start_period: 5s
     restart: always
@@ -24,11 +23,15 @@ services:
         reservations:
           cpus: '0.01'
 
-  schedule:
-    container_name: insurance_schedule
+  manual-run:
+    container_name: insurance_manual_run
     build:
-      context: ./
-      dockerfile: Dockerfile.schedule
+      context: .
+      dockerfile: Dockerfile
+      no_cache: true
+    command: bash -c "
+      /usr/local/bin/jupyter execute ~/../ratings.ipynb; 
+      /usr/local/bin/jupyter execute ~/../cash_flows.ipynb"
     restart: on-failure
     env_file:
       - .venv/.env
@@ -43,11 +46,13 @@ services:
     depends_on:
       - postgres
 
-  prices:
-    container_name: insurance_prices
-    build:
-      context: .
-      dockerfile: Dockerfile.prices
+  schedule:
+    container_name: insurance_schedule
+    build: .
+    command: bash -c "
+      printenv > /etc/environment; 
+      crontab /etc/cron.monthly/crontab;
+      cron -f && tail -f /var/log/cron.log"
     restart: on-failure
     env_file:
       - .venv/.env
@@ -65,4 +70,4 @@ services:
 volumes:
   insurance_postgres_volume:
   insurance_volume:
-    external: true
+    driver: local

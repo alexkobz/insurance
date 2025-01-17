@@ -1,6 +1,5 @@
 from __future__ import annotations
 import asyncio
-import os
 
 import aiohttp
 import socket
@@ -10,15 +9,12 @@ from inspect import currentframe
 from time import sleep
 from datetime import datetime
 
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.engine.mock import MockConnection
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.sql import text as sa_text
 
-from functions.path import get_project_root, Path
 from functions.get_date import last_day_month
+from functions.postgres_engine import engine as postrges_engine
 from logger.Logger import Logger
+
 from rudata import DocsAPI
 from rudata.RuDataRequest import RuDataRequest
 from rudata.Token import Token
@@ -28,27 +24,7 @@ logger = Logger()
 
 class RuDataDF:
 
-    env_path: Path = Path.joinpath(get_project_root(), '.venv/.env')
-    load_dotenv(env_path)
-    try:
-        DATABASE_URI: str = (
-            f"postgresql://"
-            f"{os.environ['POSTGRES_USER']}:"
-            f"{os.environ['POSTGRES_PASSWORD']}@"
-            f"{os.environ['POSTGRES_HOST']}:"
-            f"{os.environ['POSTGRES_PORT']}/"
-            f"{os.environ['POSTGRES_DATABASE']}")
-        engine: MockConnection = create_engine(DATABASE_URI)
-        engine.execute(sa_text(f'''SELECT 1''').execution_options(autocommit=True))
-    except SQLAlchemyError:
-        DATABASE_URI: str = (
-            f"postgresql://"
-            f"{os.environ['POSTGRES_USER']}:"
-            f"{os.environ['POSTGRES_PASSWORD']}@"
-            f"localhost:"
-            f"{os.environ['POSTGRES_PORT']}/"
-            f"{os.environ['POSTGRES_DATABASE']}")
-        engine: MockConnection = create_engine(DATABASE_URI)
+    engine = postrges_engine
     report_monthyear: str = last_day_month.strftime("%m%Y")
 
     def __init__(self, key=None):
