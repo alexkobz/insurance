@@ -19,20 +19,14 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.01'
-        reservations:
-          cpus: '0.01'
+          cpus: '0.2'
 
   manual-run:
+    image: insurance:latest
     container_name: insurance_manual_run
-    build:
-      context: .
-      dockerfile: Dockerfile
-      no_cache: true
     command: bash -c "
-      /usr/local/bin/jupyter execute ~/../ratings.ipynb; 
-      /usr/local/bin/jupyter execute ~/../cash_flows.ipynb"
-    restart: on-failure
+      /usr/local/bin/jupyter execute ~/../cash_flow.ipynb"
+    restart: no
     env_file:
       - .venv/.env
     volumes:
@@ -40,20 +34,18 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.1'
-        reservations:
-          cpus: '0.1'
+          cpus: '2'
     depends_on:
       - postgres
 
   schedule:
+    image: insurance:latest
     container_name: insurance_schedule
-    build: .
     command: bash -c "
       printenv > /etc/environment; 
       crontab /etc/cron.monthly/crontab;
       cron -f && tail -f /var/log/cron.log"
-    restart: on-failure
+    restart: no
     env_file:
       - .venv/.env
     volumes:
@@ -61,9 +53,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.1'
-        reservations:
-          cpus: '0.1'
+          cpus: '2'
     depends_on:
       - postgres
 

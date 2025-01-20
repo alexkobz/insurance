@@ -135,7 +135,7 @@ class RuDataDF:
         elif self._requestType == DocsAPI.RequestType.FININSTID:
             self._ids: List[int] = (
                 pd.read_sql(
-                    """
+                    f"""
                     SELECT DISTINCT fininstid
                     FROM "Emitents"
                     WHERE report_monthyear = '{RuDataDF.report_monthyear}'
@@ -146,9 +146,9 @@ class RuDataDF:
             )
             await get_response_ids("ids")
         elif self._requestType == DocsAPI.RequestType.SecurityRatingTable:
-            self._ids: List[int] = (
+            self._ids: List[str] = (
                 pd.read_sql(
-                    """
+                    f"""
                     SELECT DISTINCT isincode
                     FROM "FintoolReferenceData"
                     WHERE report_monthyear = '{RuDataDF.report_monthyear}'
@@ -161,7 +161,7 @@ class RuDataDF:
         elif self._requestType == DocsAPI.RequestType.FINTOOLIDS:
             self._ids: List[int] = (
                 pd.read_sql(
-                    """
+                    f"""
                     SELECT DISTINCT fintoolid
                     FROM "FintoolReferenceData"
                     WHERE report_monthyear = '{RuDataDF.report_monthyear}'

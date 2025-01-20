@@ -3,11 +3,12 @@ from io import BytesIO
 
 import pandas as pd
 import requests
+from dateutil.relativedelta import relativedelta
 
-from rudata.RuDataDF import RuDataDF
+from functions.postgres_engine import engine as postgres_engine
 
 # for manual run change the varibale last_day_month: date = date(1970, 1, 1)
-last_day_month: date = pd.to_datetime(date.today() - timedelta(days=28) + pd.offsets.MonthEnd(n=1))
+last_day_month: date = pd.to_datetime(date.today() - relativedelta(months=1) + pd.offsets.MonthEnd(n=1))
 
 def get_last_work_date_month() -> date:
     """
@@ -23,7 +24,7 @@ def get_last_work_date_month() -> date:
         FROM holidays
         WHERE holiday_year = {last_day_month.year}
         """
-        , RuDataDF.engine
+        , postgres_engine
     )
     if holidays.empty:
         url = f"https://xmlcalendar.ru/data/ru/{last_day_month.year}/calendar.txt"
@@ -36,10 +37,9 @@ def get_last_work_date_month() -> date:
         )
         holidays = pd.read_csv(BytesIO(holidays_request.content), header=None).rename(columns={0: 'holiday_date'})
         holidays['holiday_date'] = pd.to_datetime(holidays['holiday_date'])
-        holidays['holiday_year'] = holidays['holiday_date'].dt.year
         holidays.to_sql(
             name='holidays',
-            con=RuDataDF.engine,
+            con=postgres_engine,
             if_exists='append',
             index=False)
     while last_day_month_copy in holidays['holiday_date']:
