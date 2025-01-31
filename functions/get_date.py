@@ -3,20 +3,13 @@ from io import BytesIO
 
 import pandas as pd
 import requests
-from dateutil.relativedelta import relativedelta
 
 from functions.postgres_engine import engine as postgres_engine
 
 # for manual run change the varibale last_day_month: date = date(1970, 1, 1)
-last_day_month: date = pd.to_datetime(date.today() - relativedelta(months=1) + pd.offsets.MonthEnd(n=1))
+last_day_month: date = date.today().replace(day=1) - timedelta(days=1)
 
 def get_last_work_date_month() -> date:
-    """
-    try:
-        url = f"https://xmlcalendar.ru/data/ru/{last_day_month.year}/calendar.txt"
-    except:
-        url = "https://raw.githubusercontent.com/szonov/data-gov-ru-calendar/master/calendar.csv"
-    """
     last_day_month_copy = last_day_month
     holidays = pd.read_sql(
         f"""
