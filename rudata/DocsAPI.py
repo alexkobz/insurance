@@ -350,8 +350,8 @@ class HistoryStockBonds(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "bonds"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -366,8 +366,8 @@ class HistoryStockShares(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "shares"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -382,8 +382,8 @@ class HistoryStockNdm(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "ndm"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000
 
@@ -398,104 +398,8 @@ class HistoryStockCcp(Request):
     requestType: RequestType = RequestType.PAGES
     engine: str = "stock"
     market: str = "ccp"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
-    pageNum: int = 1
-    pageSize: int = 1000
-
-
-@dataclass
-class HistoryStockIndex(Request):
-    """
-    https://docs.efir-net.ru/dh2/#/Moex/History
-    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
-    """
-    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
-    requestType: RequestType = RequestType.PAGES
-    engine: str = "stock"
-    market: str = "index"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
-    pageNum: int = 1
-    pageSize: int = 1000
-
-
-@dataclass
-class HistoryStockForeignShares(Request):
-    """
-    https://docs.efir-net.ru/dh2/#/Moex/History
-    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
-    """
-    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
-    requestType: RequestType = RequestType.PAGES
-    engine: str = "stock"
-    market: str = "foreignshares"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
-    pageNum: int = 1
-    pageSize: int = 1000
-
-
-@dataclass
-class HistoryFuturesOptions(Request):
-    """
-    https://docs.efir-net.ru/dh2/#/Moex/History
-    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
-    """
-    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
-    requestType: RequestType = RequestType.PAGES
-    engine: str = "futures"
-    market: str = "options"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
-    pageNum: int = 1
-    pageSize: int = 1000
-
-
-@dataclass
-class HistoryFuturesForts(Request):
-    """
-    https://docs.efir-net.ru/dh2/#/Moex/History
-    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
-    """
-    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
-    requestType: RequestType = RequestType.PAGES
-    engine: str = "futures"
-    market: str = "forts"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
-    pageNum: int = 1
-    pageSize: int = 1000
-
-    
-@dataclass
-class HistoryCurrencyForts(Request): #does not work
-    """
-    https://docs.efir-net.ru/dh2/#/Moex/History
-    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
-    """
-    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
-    requestType: RequestType = RequestType.PAGES
-    engine: str = "currency"
-    market: str = "forts"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
-    pageNum: int = 1
-    pageSize: int = 1000
-
-    
-@dataclass
-class HistoryCurrencyFutures(Request): #does not work
-    """
-    https://docs.efir-net.ru/dh2/#/Moex/History
-    Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
-    """
-    url: str = "https://dh2.efir-net.ru/v2/Moex/History"
-    requestType: RequestType = RequestType.PAGES
-    engine: str = "currency"
-    market: str = "futures"
-    dateFrom: str = "1900-01-01"
-    dateTo: str = dt.now().strftime("%Y-%m-%d")
+    dateFrom: str = (last_work_date_month - timedelta(days=30)).strftime("%Y-%m-%d")
+    dateTo: str = last_work_date_month_str
     pageNum: int = 1
     pageSize: int = 1000
 

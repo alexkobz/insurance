@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import json
 
 import aiohttp
 import socket
@@ -186,7 +187,6 @@ class RuDataDF:
     @property
     @Logger.logDF
     def df(self) -> pd.DataFrame:
-
         try:
             df: pd.DataFrame = pd.read_sql(
                     f"""
@@ -205,6 +205,11 @@ class RuDataDF:
             self._df: pd.DataFrame = asyncio.run(self._get_df())
 
             to_postgres_df = self._df.copy()
+            for col in to_postgres_df.columns:
+                if to_postgres_df[col].apply(lambda x: isinstance(x, list)).any():
+                    to_postgres_df = pd.concat(
+                        [to_postgres_df, pd.DataFrame([base[0] for base in to_postgres_df[col]])], axis=1
+                    ).drop(columns=[col])
             to_postgres_df['report_monthyear'] = RuDataDF.report_monthyear
             to_postgres_df.to_sql(
                 name=self.key,
