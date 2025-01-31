@@ -13,7 +13,7 @@ COPY functions functions
 COPY logger logger
 COPY rudata rudata
 COPY ratings.ipynb .
-COPY cash_flow.ipynb .
+COPY stocks.ipynb .
 
 RUN chmod +x /etc/cron.monthly/crontab
 RUN chmod +x *.ipynb

@@ -26,7 +26,7 @@ services:
     container_name: insurance_manual_run
     command: bash -c "
       /usr/local/bin/jupyter execute ~/../ratings.ipynb; 
-      /usr/local/bin/jupyter execute ~/../cash_flow.ipynb"
+      /usr/local/bin/jupyter execute ~/../stocks.ipynb"
     restart: no
     env_file:
       - .venv/.env
