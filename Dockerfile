@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.10
 LABEL authors="alexkobz"
 
 RUN apt-get update && apt-get -y install cron
