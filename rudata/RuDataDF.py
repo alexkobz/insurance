@@ -121,11 +121,11 @@ class RuDataDF:
                 pagers.append(payloadTMP.copy())
             return pagers
 
-        def _pages():
+        async def _pages():
             payloads: List[dict] = get_payloads_pages(self._payload.copy(), "pageNum")
-            asyncio.run(create_execute_tasks(payloads))
+            await create_execute_tasks(payloads)
 
-        def _fintool_reference_data():
+        async def _fintool_reference_data():
             if isinstance(self._payload["pager"], DocsAPI.Pager):
                 pagers = get_payloads_pages(self._payload["pager"].__dict__.copy(), "page")
                 payloads = []
@@ -133,7 +133,7 @@ class RuDataDF:
                 for pager in pagers:
                     payload["pager"] = pager
                     payloads.append(payload.copy())
-                asyncio.run(create_execute_tasks(payloads))
+                await create_execute_tasks(payloads)
 
         async def _fininstid():
             self._ids: List[int] = (
@@ -179,9 +179,9 @@ class RuDataDF:
 
         match self._requestType:
             case DocsAPI.RequestType.PAGES:
-                _pages()
+                await _pages()
             case DocsAPI.RequestType.FintoolReferenceData:
-                _fintool_reference_data()
+                await _fintool_reference_data()
             case DocsAPI.RequestType.FININSTID:
                 await _fininstid()
             case DocsAPI.RequestType.SecurityRatingTable:
