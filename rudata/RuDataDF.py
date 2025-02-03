@@ -114,26 +114,28 @@ class RuDataDF:
                 payloads.append(payload.copy())
             await create_execute_tasks(payloads)
 
-        async def get_payloads_pages(payloadTMP: dict, key: str) -> List[dict]:
+        def get_payloads_pages(payloadTMP: dict, key: str) -> List[dict]:
             pagers: List[dict] = []
             for pageNum in range(1, 10000):
                 payloadTMP[key] = pageNum
                 pagers.append(payloadTMP.copy())
             return pagers
 
-        if self._requestType == DocsAPI.RequestType.PAGES:
-            payloads: List[dict] = await get_payloads_pages(self._payload.copy(), "pageNum")
+        def _pages():
+            payloads: List[dict] = get_payloads_pages(self._payload.copy(), "pageNum")
             asyncio.run(create_execute_tasks(payloads))
-        elif self._requestType == DocsAPI.RequestType.FintoolReferenceData:
+
+        def _fintool_reference_data():
             if isinstance(self._payload["pager"], DocsAPI.Pager):
-                pagers = await get_payloads_pages(self._payload["pager"].__dict__.copy(), "page")
+                pagers = get_payloads_pages(self._payload["pager"].__dict__.copy(), "page")
                 payloads = []
                 payload = self._payload.copy()
                 for pager in pagers:
                     payload["pager"] = pager
                     payloads.append(payload.copy())
                 asyncio.run(create_execute_tasks(payloads))
-        elif self._requestType == DocsAPI.RequestType.FININSTID:
+
+        async def _fininstid():
             self._ids: List[int] = (
                 pd.read_sql(
                     f"""
@@ -146,20 +148,22 @@ class RuDataDF:
                 .to_list()
             )
             await get_response_ids("ids")
-        elif self._requestType == DocsAPI.RequestType.SecurityRatingTable:
+
+        async def _security_rating_table():
             self._ids: List[str] = (
                 pd.read_sql(
                     f"""
-                    SELECT DISTINCT isincode
-                    FROM "FintoolReferenceData"
-                    WHERE report_monthyear = '{RuDataDF.report_monthyear}'
-                    """
+                                SELECT DISTINCT isincode
+                                FROM "FintoolReferenceData"
+                                WHERE report_monthyear = '{RuDataDF.report_monthyear}'
+                                """
                     , self.engine
                 )['isincode']
                 .to_list()
             )
             await get_response_ids("ids")
-        elif self._requestType == DocsAPI.RequestType.FINTOOLIDS:
+
+        async def _fintoolids():
             self._ids: List[int] = (
                 pd.read_sql(
                     f"""
@@ -172,15 +176,27 @@ class RuDataDF:
                 .to_list()
             )
             await get_response_ids("fintoolIds")
-        elif self._requestType == DocsAPI.RequestType.REGULAR:
-            async with aiohttp.ClientSession(
-                    connector=aiohttp.TCPConnector(limit=DocsAPI.LIMIT,
-                                                   family=socket.AF_INET),
-                    trust_env=True,
-                    timeout=aiohttp.ClientTimeout(3600)
-            ) as session:
-                result: List[Optional[dict]] = await RuDataRequest(self._url, session).post(self._payload)
-            self._list_json.extend(result)
+
+        match self._requestType:
+            case DocsAPI.RequestType.PAGES:
+                _pages()
+            case DocsAPI.RequestType.FintoolReferenceData:
+                _fintool_reference_data()
+            case DocsAPI.RequestType.FININSTID:
+                await _fininstid()
+            case DocsAPI.RequestType.SecurityRatingTable:
+                await _security_rating_table()
+            case DocsAPI.RequestType.FINTOOLIDS:
+                await _fintoolids()
+            case _:
+                async with aiohttp.ClientSession(
+                        connector=aiohttp.TCPConnector(limit=DocsAPI.LIMIT,
+                                                       family=socket.AF_INET),
+                        trust_env=True,
+                        timeout=aiohttp.ClientTimeout(3600)
+                ) as session:
+                    result: List[Optional[dict]] = await RuDataRequest(self._url, session).post(self._payload)
+                self._list_json.extend(result)
 
         return pd.DataFrame(self._list_json)
 

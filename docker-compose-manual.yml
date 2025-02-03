@@ -39,25 +39,6 @@ services:
     depends_on:
       - postgres
 
-  schedule:
-    image: insurance:latest
-    container_name: insurance_schedule
-    command: bash -c "
-      printenv > /etc/environment; 
-      crontab /etc/cron.monthly/crontab;
-      cron -f && tail -f /var/log/cron.log"
-    restart: no
-    env_file:
-      - .venv/.env
-    volumes:
-      - insurance_volume:/data
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-    depends_on:
-      - postgres
-
 volumes:
   insurance_postgres_volume:
   insurance_volume:
