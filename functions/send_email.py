@@ -32,7 +32,7 @@ def main(*filenames):
             part.add_header(
                         "Content-Disposition",
                         # insert report date into filename
-                        f"attachment; filename= {filename[:filename.find('.')]}_{last_day_month.strftime('%Y%m%d')}{filename[filename.find('.'):]}",
+                        f"attachment; filename={filename}",
                     )
             message.attach(part)
             
