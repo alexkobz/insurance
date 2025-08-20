@@ -8,14 +8,9 @@ from dotenv import load_dotenv
 from functions.divide_chunks import divide_chunks
 from functions.get_date import last_day_month_str, last_work_date_month, last_work_date_month_str, last_day_month
 from functions.path import get_project_root
-from logger.Logger import Logger
 from datetime import datetime as dt, timedelta
-from rudata.RuDataDF import RuDataDF
+from rudata.RuDataDF import RuDataDF, LIMIT
 
-
-LIMIT = 5
-
-Logger()
 
 class Account(RuDataDF):
     """
@@ -31,7 +26,10 @@ class Account(RuDataDF):
             return
         self._instance.__initialized = True
         self.__payload = self.payloads()
-        self._token_str: str = ""
+        response: Dict[str, str] = self.send_requests()
+        self._token_str: str = response["token"]
+        self.set_headers({"Authorization": "Bearer " + self._token_str})
+        sleep(1)
 
     @staticmethod
     def __new__(cls, *args, **kwargs):
@@ -39,14 +37,6 @@ class Account(RuDataDF):
             cls._instance = object.__new__(cls, *args, **kwargs)
             cls._instance.__initialized = False
         return cls._instance
-
-    @Logger.init_logger
-    def __str__(self):
-        if not self._token_str:
-            response: Dict[str, str] = self.send_requests()
-            self._token_str: str = response["token"]
-            sleep(1)
-        return self._token_str
 
     def payloads(self) -> dict:
         env_path: Path = Path.joinpath(get_project_root(), '.venv/.env')

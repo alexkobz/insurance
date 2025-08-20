@@ -1,21 +1,19 @@
 from __future__ import annotations
 import asyncio
+from time import sleep
 import aiohttp
 import socket
 import pandas as pd
-from typing import List
-from sqlalchemy.exc import SQLAlchemyError
+from typing import List, Dict
 
 from functions.get_date import last_day_month
 from functions.clickhouse_client import client as clickhouse_client, prepare_for_clickhouse
 from functions.retries import retry
 from logger.Logger import Logger
-from rudata import DocsAPI
 from rudata.RuData import RuDataStrategy
-from rudata.RuDataRequest import RuDataRequest
-from rudata.Token import Token
 
 
+LIMIT = 5
 logger = Logger()
 
 class RuDataDF(RuDataStrategy):
@@ -23,12 +21,22 @@ class RuDataDF(RuDataStrategy):
     client = clickhouse_client
     report_date = pd.to_datetime(last_day_month)
     report_yearmonth: str = last_day_month.strftime("%Y%m")
+    headers: Dict[str, str] = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/39.0.2171.95 Safari/537.36',
+        'content-type': 'application/json',
+        'Accept': 'application/json',
+    }
+    semaphore: asyncio.Semaphore = asyncio.Semaphore(LIMIT)
 
     def __init__(self):
-        self.url: str = ''
         self.name = self.__class__.__name__
         self._list_json: List[dict] = []
         self._df: pd.DataFrame = pd.DataFrame()
+
+    @classmethod
+    def set_headers(cls, headers: dict):
+        cls.headers.update(headers)
 
     def _select_df(self) -> pd.DataFrame:
         try:
@@ -39,21 +47,21 @@ class RuDataDF(RuDataStrategy):
                 WHERE _partition_id = '{self.report_yearmonth}'
                 """
             )
-        except SQLAlchemyError:
+        except Exception:
             df: pd.DataFrame = pd.DataFrame()
         return df
 
     @property
     def df(self) -> pd.DataFrame:
+        if 'Authorization' not in self.headers or self.headers['Authorization'] is None or self.headers['Authorization'] == 'Bearer ':
+            raise ValueError("Authorization header is not set. Run Account()")
         df = self._select_df()
         if df.empty:
-            if Token.instance is None:
-                RuDataRequest.set_headers()
             df: pd.DataFrame = asyncio.run(self.send_requests())
             df = prepare_for_clickhouse(df.copy())
             df['report_date'] = RuDataDF.report_date
             self.client.insert_df(self.name, df)
-        self._df = df
+        self._df = df.loc[:, df.columns != 'report_date']
         return self._df
 
     @df.setter
@@ -65,8 +73,8 @@ class RuDataDF(RuDataStrategy):
 
     def create_tasks(self, chunk_payloads: List[dict], session: aiohttp.ClientSession) -> List[asyncio.Task]:
         return [asyncio.create_task(
-            RuDataRequest(self.url, session).post(payload=payload)
-        ) for payload in chunk_payloads]
+            self.post(session=session, payload=payload)
+            ) for payload in chunk_payloads]
 
     @retry(
         exceptions=(TimeoutError, ConnectionError, Exception),
@@ -91,13 +99,42 @@ class RuDataDF(RuDataStrategy):
     )
     async def send_requests(self) -> pd.DataFrame:
         async with aiohttp.ClientSession(
-                connector=aiohttp.TCPConnector(limit=DocsAPI.LIMIT,
+                connector=aiohttp.TCPConnector(limit=LIMIT,
                                                family=socket.AF_INET),
                 trust_env=True,
                 timeout=aiohttp.ClientTimeout(7200)
         ) as session:
+
             for chunk_payloads in self.payloads():
                 tasks: List[asyncio.Task] = self.create_tasks(chunk_payloads, session)
                 if not tasks:
                     await self.execute_tasks(tasks)
             return pd.DataFrame(self._list_json)
+
+    async def post(self, session, payload):
+        async with self.semaphore, session.post(
+                self.url,
+                json=payload,
+                headers=self.headers,
+                timeout=60
+        ) as response:
+            if response.ok:
+                try:
+                    response_body = await response.json()
+                    await asyncio.sleep(1.1)
+                except aiohttp.client_exceptions.ClientConnectorError as e:
+                    logger.exception(str(e))
+                    sleep(10)
+                    raise ConnectionError("Restart")
+                except asyncio.exceptions.TimeoutError as e:
+                    logger.exception(str(e))
+                    sleep(10)
+                    await self.post(session, payload)
+                except Exception as e:
+                    logger.exception(str(e))
+                    sleep(60)
+                    raise Exception("Restart")
+                finally:
+                    return response_body
+            else:
+                return []

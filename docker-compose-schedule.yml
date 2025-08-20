@@ -16,10 +16,6 @@ services:
     restart: always
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
 
   schedule:
     image: insurance:latest
@@ -33,10 +29,6 @@ services:
       - .venv/.env
     volumes:
       - insurance_volume:/data
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
     depends_on:
       - postgres
 

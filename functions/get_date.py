@@ -8,7 +8,6 @@ from functions.clickhouse_client import client as clickhouse_client
 
 # for manual run change the varibale last_day_month: date = date(1970, 1, 1)
 last_day_month: date = date.today().replace(day=1) - timedelta(days=1)
-# last_day_month: date = date(2025, 7, 31)
 
 def get_last_work_date_month() -> date:
     last_day_month_copy = last_day_month
