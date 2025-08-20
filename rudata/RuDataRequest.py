@@ -5,8 +5,7 @@ from time import sleep
 from typing import Dict
 
 from logger.Logger import Logger
-from rudata.DocsAPI import LIMIT
-from rudata.Token import Token
+from rudata.RuDataMethod import Account, LIMIT
 
 logger = Logger()
 
@@ -29,7 +28,7 @@ class RuDataRequest:
 
     @staticmethod
     def set_headers() -> None:
-        token: str = str(Token())
+        token: str = str(Account())
         RuDataRequest.headers["Authorization"] = 'Bearer ' + token
 
     async def post(self, payload):

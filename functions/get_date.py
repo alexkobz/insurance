@@ -4,20 +4,20 @@ from io import BytesIO
 import pandas as pd
 import requests
 
-from functions.postgres_engine import engine as postgres_engine
+from functions.clickhouse_client import client as clickhouse_client
 
 # for manual run change the varibale last_day_month: date = date(1970, 1, 1)
 last_day_month: date = date.today().replace(day=1) - timedelta(days=1)
+# last_day_month: date = date(2025, 7, 31)
 
 def get_last_work_date_month() -> date:
     last_day_month_copy = last_day_month
-    holidays = pd.read_sql(
+    holidays = clickhouse_client.query_df(
         f"""
         SELECT holiday_date
         FROM holidays
         WHERE holiday_year = {last_day_month.year}
         """
-        , postgres_engine
     )
     if holidays.empty:
         url = f"https://xmlcalendar.ru/data/ru/{last_day_month.year}/calendar.txt"
@@ -30,11 +30,7 @@ def get_last_work_date_month() -> date:
         )
         holidays = pd.read_csv(BytesIO(holidays_request.content), header=None).rename(columns={0: 'holiday_date'})
         holidays['holiday_date'] = pd.to_datetime(holidays['holiday_date'])
-        holidays.to_sql(
-            name='holidays',
-            con=postgres_engine,
-            if_exists='append',
-            index=False)
+        clickhouse_client.insert_df('holidays', holidays)
     while last_day_month_copy in holidays['holiday_date']:
         last_day_month_copy -= timedelta(days=1)
     return last_day_month_copy

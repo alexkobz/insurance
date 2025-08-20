@@ -7,8 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 from datetime import datetime as dt, timedelta
 
-from functions.get_date import last_day_month_str, last_work_date_month, last_work_date_month_str
-
+from functions.get_date import last_day_month_str, last_work_date_month, last_work_date_month_str, last_day_month
 
 # Ограничение по запросам в секунду
 LIMIT = 5
@@ -266,7 +265,36 @@ class EndOfDay(Request):
     isin: str = ""
     date: str = last_day_month_str
     dateType: str = "LAST_TRADE_DATE"
-    fields: List[str] = field(default_factory=lambda: [])
+    fields: List[str] = field(default_factory=lambda: [
+        "isin", "seccode", "secname", "name", "fintoolId", "id_iss", "id_trade_site",
+        "add_date", "update_date", "mat_date", "last_time",
+        "close", "last", "open", "high", "low", "mprice", "avge_prce", "bid", "ask",
+        "vol", "val", "val_usd", "vol_lots", "deal_acc",
+        "yield_bid", "yield_ask", "last_yield", "yield_agg", "yield_swa",
+        "duration", "pvbp", "convexity", "spread",
+        "boardid", "boardname", "exch", "currency"]
+    )
+
+@dataclass
+class EndOfDayOnExchanges(Request):
+    """
+    https://docs.efir-net.ru/dh2/#/Archive/EndOfDayOnExchanges?id=post-endofdayonexchanges
+    Получить данные по результатам торгов на заданную дату.
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Archive/EndOfDayOnExchanges"
+    requestType: RequestType = RequestType.ISIN
+    codes: str = field(default_factory=lambda: [])
+    dateFrom: str = last_day_month - timedelta(days=30)
+    dateTo: str = last_day_month_str
+    fields: List[str] = field(default_factory=lambda: [
+        "isin", "seccode", "secname", "name", "fintoolId", "id_iss", "id_trade_site",
+        "add_date", "update_date", "mat_date", "last_time",
+        "close", "last", "open", "high", "low", "mprice", "avge_prce", "bid", "ask",
+        "vol", "val", "val_usd", "vol_lots", "deal_acc",
+        "yield_bid", "yield_ask", "last_yield", "yield_agg", "yield_swa",
+        "duration", "pvbp", "convexity", "spread",
+        "boardid", "boardname", "exch", "currency"]
+    )
 
 
 @dataclass
@@ -469,6 +497,17 @@ class MoexStocks(Request):
 class NsdCommonData(Request):
     """
     https://docs.efir-net.ru/v2/Moex/Stocks
+    Возвращает краткое описание ценных бумаг фондового рынка
+    """
+    url: str = "https://dh2.efir-net.ru/v2/Nsd/CommonData"
+    requestType: RequestType = RequestType.PAGES
+    pageNum: int = 1
+    pageSize: int = 100
+
+@dataclass
+class Multipliers(Request):
+    """
+    https://docs.efir-net.ru/v2/Emitent/Multipliers
     Возвращает краткое описание ценных бумаг фондового рынка
     """
     url: str = "https://dh2.efir-net.ru/v2/Nsd/CommonData"

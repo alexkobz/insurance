@@ -5,7 +5,7 @@ from time import sleep
 from typing import Dict
 
 from functions.path import get_project_root, Path
-from rudata import DocsAPI
+from rudata import RuDataMethod
 from logger.Logger import Logger
 
 
@@ -24,8 +24,8 @@ class Token:
         if self._instance.__initialized:
             return
         self._instance.__initialized = True
-        self.__url = getattr(DocsAPI, "Account").url
-        self.__payload = getattr(DocsAPI, "Account")().payload()
+        self.__url = getattr(RuDataMethod, "Account").url
+        self.__payload = getattr(RuDataMethod, "Account").payload()
         env_path: Path = Path.joinpath(get_project_root(), '.venv/.env')
         load_dotenv(env_path)
         self.__payload["login"] = os.environ["LOGIN"]
@@ -35,7 +35,7 @@ class Token:
     @staticmethod
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance: cls = object.__new__(cls, *args, **kwargs)
+            cls._instance = object.__new__(cls, *args, **kwargs)
             cls._instance.__initialized = False
         return cls._instance
 
