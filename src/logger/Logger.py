@@ -2,15 +2,16 @@ import logging
 import sys
 import time
 from datetime import datetime as dt
-from functions.retries import retry
 from functools import wraps
 from pandas import DataFrame
 from asyncio import TimeoutError
+from src.utils.retries import retry
+from src.utils.path import get_project_root
 
 
 class Logger(logging.Logger):
     """
-    Класс для логирования. Логи в файле ./logger/logger.log
+    Класс для логирования. Логи в файле ./logs/logs.log
     """
     _instance: logging.Logger = None
 
@@ -20,7 +21,7 @@ class Logger(logging.Logger):
         else:
             cls._instance = object.__new__(cls)
             logging.basicConfig(
-                filename=f'./logger/logger_{dt.now().strftime("%Y%m%d%H%M%S")}.log',
+                filename=f'{get_project_root()}/logs/logger_{dt.now().strftime("%Y%m%d%H%M%S")}.log',
                 filemode='a+',
                 level=logging.INFO,
                 format='%(process)d - %(asctime)s - %(levelname)s - %(message)s'

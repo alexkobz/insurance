@@ -12,6 +12,22 @@ services:
       - insurance_clickhouse_volume:/var/lib/clickhouse
     restart: always
 
+  manual-run:
+    image: insurance:latest
+    container_name: insurance_manual_run
+    command: >
+      bash -c "
+        /usr/local/bin/jupyter execute ~/../ratings.ipynb;
+        /usr/local/bin/jupyter execute ~/../stocks.ipynb
+      "
+    restart: no
+    env_file:
+      - .venv/.env
+    volumes:
+      - insurance_volume:/data
+    depends_on:
+      - clickhouse-server
+
   # OPTIONAL
   ch-ui:
     image: ghcr.io/caioricciuti/ch-ui:latest
@@ -20,18 +36,6 @@ services:
       - "5522:5521"
     env_file:
       - .venv/.env
-
-  manual-run:
-    image: insurance:latest
-    container_name: insurance_manual_run
-    command: bash -c "
-      /usr/local/bin/jupyter execute ~/../ratings.ipynb; 
-      /usr/local/bin/jupyter execute ~/../stocks.ipynb"
-    restart: no
-    env_file:
-      - .venv/.env
-    volumes:
-      - insurance_volume:/data
     depends_on:
       - clickhouse-server
 

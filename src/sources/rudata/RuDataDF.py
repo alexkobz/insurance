@@ -6,11 +6,11 @@ import socket
 import pandas as pd
 from typing import List, Dict
 
-from functions.get_date import last_day_month
-from functions.clickhouse_client import client as clickhouse_client, prepare_for_clickhouse
-from functions.retries import retry
-from logger.Logger import Logger
-from rudata.RuData import RuDataStrategy
+from src.utils.get_date import last_day_month
+from src.utils.clickhouse_client import client as clickhouse_client, prepare_for_clickhouse
+from src.utils.retries import retry
+from src.logger.Logger import Logger
+from src.sources.rudata.RuData import RuDataStrategy
 
 
 LIMIT = 5
@@ -76,6 +76,13 @@ class RuDataDF(RuDataStrategy):
             self.post(session=session, payload=payload)
             ) for payload in chunk_payloads]
 
+    @staticmethod
+    async def safe_task(task, timeout=120):
+        try:
+            return await asyncio.wait_for(task, timeout=timeout)
+        except asyncio.TimeoutError:
+            return "Timed out"
+
     @retry(
         exceptions=(TimeoutError, ConnectionError, Exception),
         tries=5,
@@ -83,13 +90,12 @@ class RuDataDF(RuDataStrategy):
         logger=logger
     )
 
-    async def execute_tasks(self, tasks: List[asyncio.Task]) -> None:
-        resAll: List[List[dict]] = [await task for task in asyncio.as_completed(tasks, timeout=60)]
+    async def execute_tasks(self, tasks: List[asyncio.Task]) -> bool:
+        resAll: List[List[dict]] = await asyncio.gather(*(self.safe_task(t, 60) for t in tasks))
         result: List[dict] = [row for task_res in resAll for row in task_res]
-        if result:
-            self._list_json.extend(result)
-        else:
-            return
+        self._list_json.extend(result)
+        logger.info(f"Chunk done {len(result)}" )
+        return bool(result)
 
     @retry(
         exceptions=(TimeoutError, ConnectionError, Exception),
@@ -107,8 +113,10 @@ class RuDataDF(RuDataStrategy):
 
             for chunk_payloads in self.payloads():
                 tasks: List[asyncio.Task] = self.create_tasks(chunk_payloads, session)
-                if not tasks:
-                    await self.execute_tasks(tasks)
+                if tasks:
+                    code: bool = await self.execute_tasks(tasks)
+                    if not code and isinstance(self, RuDataPagesDF):
+                        return pd.DataFrame(self._list_json)
             return pd.DataFrame(self._list_json)
 
     async def post(self, session, payload):
@@ -138,3 +146,6 @@ class RuDataDF(RuDataStrategy):
                     return response_body
             else:
                 return []
+
+class RuDataPagesDF(RuDataDF):
+    pass

@@ -18,7 +18,7 @@ def retry(
         exceptions: Exception(s) to catch (can be a tuple of exceptions)
         tries: Maximum number of attempts
         delay: Initial delay between attempts in seconds
-        logger: Optional logger to log retry attempts (e.g., logging.warning)
+        logger: Optional logs to log retry attempts (e.g., logging.warning)
     """
 
     def decorator(func):
@@ -28,8 +28,6 @@ def retry(
                 remaining_tries, current_delay = tries, delay
                 for attempt in range(1, remaining_tries + 1):
                     try:
-                        if logger:
-                            logger.info(f'attempt {attempt}')
                         res = await func(*args, **kwargs)
                         return res
                     except exceptions as e:
@@ -48,7 +46,7 @@ def retry(
                 remaining_tries, current_delay = tries, delay
                 for attempt in range(1, remaining_tries + 1):
                     try:
-                        # logger.info('attempt', attempt)
+                        # logs.info('attempt', attempt)
                         res = func(*args, **kwargs)
                         return res
                     except exceptions as e:

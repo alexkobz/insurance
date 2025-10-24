@@ -2,14 +2,21 @@ import os
 from pathlib import Path
 from time import sleep
 from typing import Dict, List
+import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-from functions.divide_chunks import divide_chunks
-from functions.get_date import last_day_month_str, last_work_date_month, last_work_date_month_str, last_day_month
-from functions.path import get_project_root
+from src.utils.divide_chunks import divide_chunks
+from src.utils.get_date import (
+    last_day_month_str,
+    last_work_date_month,
+    last_work_date_month_str,
+    last_day_month,
+    first_day_month_str,
+)
+from src.utils.path import get_project_root
 from datetime import datetime as dt, timedelta
-from rudata.RuDataDF import RuDataDF, LIMIT
+from src.sources.rudata.RuDataDF import RuDataDF, RuDataPagesDF, LIMIT
 
 
 class Account(RuDataDF):
@@ -57,7 +64,7 @@ class Account(RuDataDF):
         return self._instance
 
 
-class ExchangeTree(RuDataDF):
+class ExchangeTree(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Info/ExchangeTree?id=post-exchangetree
     Получить иерархию торговых площадок/источников, используемых Интерфакс
@@ -74,7 +81,7 @@ class ExchangeTree(RuDataDF):
             ]
 
 
-class Emitents(RuDataDF):
+class Emitents(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Info/Emitents?id=post-emitents
     Получить краткий справочник по эмитентам.
@@ -93,7 +100,7 @@ class Emitents(RuDataDF):
             ]
 
 
-class OfferorsGuarants(RuDataDF):
+class OfferorsGuarants(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Bond/OfferorsGuarants?id=post-offerorsguarants
     Возвращает список гарантов/оферентов для инструмента
@@ -111,7 +118,7 @@ class OfferorsGuarants(RuDataDF):
                 } for i in range(LIMIT)
             ]
 
-class CurrencyRateHistory(RuDataDF):
+class CurrencyRateHistory(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Archive/CurrencyRate?id=post-currencyrate
     Получить кросс-курс двух валют.
@@ -147,9 +154,7 @@ class ListScaleValues(RuDataDF):
         ]
 
 
-# ---- Paged RuDataDF classes ----
-
-class InfoSecurities(RuDataDF):
+class InfoSecurities(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Info/Securities?id=post-securities
     Получить краткий справочник по финансовым инструментам.
@@ -169,7 +174,7 @@ class InfoSecurities(RuDataDF):
             ]
 
 
-class RUPriceHistory(RuDataDF):
+class RUPriceHistory(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/RuPrice/History
     Позволяет получить таблицу с историческими данными по одному или нескольким инструментам за заданный период времени.
@@ -191,7 +196,7 @@ class RUPriceHistory(RuDataDF):
             ]
 
 
-class CalendarV2(RuDataDF):
+class CalendarV2(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Info/CalendarV2?id=post-calendarv2
     Возвращает календарь событий по инструментам за период.
@@ -213,7 +218,7 @@ class CalendarV2(RuDataDF):
             ]
 
 
-class CouponsExt(RuDataDF):
+class CouponsExt(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Bond/CouponsExt
     """
@@ -230,7 +235,7 @@ class CouponsExt(RuDataDF):
             ]
 
 
-class MoexSecurities(RuDataDF):
+class MoexSecurities(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Moex/Securities?id=post-securities
     Получить список торгуемых инструментов.
@@ -248,7 +253,7 @@ class MoexSecurities(RuDataDF):
             ]
 
 
-class HistoryStockBonds(RuDataDF):
+class HistoryStockBonds(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Moex/History
     Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
@@ -271,7 +276,7 @@ class HistoryStockBonds(RuDataDF):
             ]
 
 
-class HistoryStockShares(RuDataDF):
+class HistoryStockShares(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Moex/History
     Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
@@ -294,7 +299,7 @@ class HistoryStockShares(RuDataDF):
             ]
 
 
-class HistoryStockNdm(RuDataDF):
+class HistoryStockNdm(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Moex/History
     Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
@@ -317,7 +322,7 @@ class HistoryStockNdm(RuDataDF):
             ]
 
 
-class HistoryStockCcp(RuDataDF):
+class HistoryStockCcp(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Moex/History
     Получить официальные итоги по набору конкретных инструментов или по всем инструментам заданного рынка, группы режимов или одного режима торгов.
@@ -340,7 +345,7 @@ class HistoryStockCcp(RuDataDF):
             ]
 
 
-class CompanyGroupRelations(RuDataDF):
+class CompanyGroupRelations(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Affiliate/CompanyGroupRelations
     Возвращает описание отношений в группах компаний
@@ -358,7 +363,7 @@ class CompanyGroupRelations(RuDataDF):
             ]
 
 
-class MoexStocks(RuDataDF):
+class MoexStocks(RuDataPagesDF):
     """
     https://docs.efir-net.ru/v2/Moex/Stocks
     Возвращает краткое описание ценных бумаг фондового рынка
@@ -375,7 +380,7 @@ class MoexStocks(RuDataDF):
             ]
 
 
-class NsdCommonData(RuDataDF):
+class NsdCommonData(RuDataPagesDF):
     """
     """
     url = "https://dh2.efir-net.ru/v2/Nsd/CommonData"
@@ -390,7 +395,7 @@ class NsdCommonData(RuDataDF):
             ]
 
 
-class Multipliers(RuDataDF):
+class Multipliers(RuDataPagesDF):
     """
     https://docs.efir-net.ru/v2/Emitent/Multipliers
     Возвращает краткое описание ценных бумаг фондового рынка
@@ -407,7 +412,7 @@ class Multipliers(RuDataDF):
             ]
 
 
-class FintoolReferenceData(RuDataDF):
+class FintoolReferenceData(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Info/FintoolReferenceData?id=post-fintoolreferencedata
     Получить расширенный справочник по финансовым инструментам.
@@ -463,11 +468,11 @@ class CompanyRatingsTable(RuDataDF):
         if not fininstids:
             raise ValueError('finintids must not be empty. Please check the Emitents table for data.')
 
-        for chink_fininstid in divide_chunks(fininstids, 100*LIMIT):
+        for chunk_fininstid in divide_chunks(fininstids, 100*LIMIT):
             yield [
                 {
                     'count': 10000000,
-                    'ids': [{"id": chink_fininstid[100*i:100*(i+1)], "idType": "FININSTID"}],
+                    'ids': [{"id": fininstid, "idType": "FININSTID"} for fininstid in chunk_fininstid[100*i:100*(i+1)]],
                     'date': last_day_month_str,
                     'companyName': '',
                     'filter': ''
@@ -526,14 +531,22 @@ class CurrencyRate(RuDataDF):
         if not currencies:
             raise ValueError('currencies must not be empty. Please check the currencies table for data.')
 
-        for chunk_currencies in divide_chunks(currencies, LIMIT):
-            yield [
-                {
-                    'from': chunk_currencies[i],
+        for currency in currencies:
+            yield {
+                    'from': currency,
                     'to': 'RUB',
                     'date': last_day_month_str,
-                } for i in range(LIMIT)
-            ]
+                }
+
+    async def send_requests(self):
+        currencies_rudata = []
+        for payload in CurrencyRate().payloads():
+            ans = requests.post(self.url, json=payload, headers=self.headers)
+            result: dict = ans.json()
+            result["currency"] = payload['from']
+            currencies_rudata.append(result)
+            sleep(1)
+        return pd.DataFrame(currencies_rudata)
 
 
 class AccruedInterestOnDate(RuDataDF):
@@ -561,7 +574,40 @@ class AccruedInterestOnDate(RuDataDF):
             yield [
                 {
                     'fintoolIds': chunk_fintoolids[100 * i:100 * (i + 1)],
+                    'endDate': last_day_month_str,
                     'cashFlowCalcDate': last_day_month_str,
+                } for i in range(LIMIT)
+            ]
+
+
+class FloatersOnPeriod(RuDataDF):
+    """
+    https://docs.efir-net.ru/dh2/#/AccruedInterest/floaters-on-period
+    Расчет НКД для флоатеров за период
+    """
+    url = "https://dh2.efir-net.ru/v2/AccruedInterest/floaters-on-period"
+
+    def payloads(self):
+        fintoolids: List[int] = (
+            self.client.query_df(
+                f"""
+                SELECT DISTINCT fintoolId
+                FROM "FloaterData"
+                WHERE _partition_id = '{self.report_yearmonth}'
+                """
+            )['fintoolId']
+            .to_list()
+        )
+        if not fintoolids:
+            raise ValueError('fintoolids must not be empty. Please check the FintoolReferenceData table for data.')
+        for chunk_fintoolids in divide_chunks(fintoolids, 10 * LIMIT):
+            yield [
+                {
+                    'fintoolIds': chunk_fintoolids[10 * i:10 * (i + 1)],
+                    'beginDate': last_day_month_str,
+                    'endDate': last_day_month_str,
+                    'cashFlowCalcDate': last_day_month_str,
+                    'pageSize': 100
                 } for i in range(LIMIT)
             ]
 
@@ -574,13 +620,23 @@ class EndOfDay(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Archive/EndOfDay"
 
     def payloads(self):
-        isins: List[int] = (
+        # isins = pd.read_excel('/Users/alexander/PycharmProjects/insurance_mine/data/Input/ISIN_072025.xlsx', dtype=str)['code_isin'].tolist()
+        isins: List[str] = (
             self.client.query_df(
                 f"""
-                SELECT DISTINCT isincode
-                FROM "ISIN"
-                WHERE _partition_id = '{self.report_yearmonth}'
-                """
+                        SELECT DISTINCT isincode
+                        FROM "FintoolReferenceData"
+                        WHERE _partition_id = '{self.report_yearmonth}' 
+                        AND tradesite IN 
+                        (
+                            170,
+                            183,
+                            193,
+                            207,
+                            285,
+                            297,
+                        )
+                        """
             )['isincode']
             .to_list()
         )
@@ -590,8 +646,8 @@ class EndOfDay(RuDataDF):
         for chunk_isins in divide_chunks(isins, LIMIT):
             yield [
                 {
-                    'isin': chunk_isins[i],
-                    'date': last_day_month_str,
+                    'isin': isin,
+                    'date': first_day_month_str,
                     'dateType': 'LAST_TRADE_DATE',
                     'fields': [
                         "isin", "seccode", "secname", "name", "fintoolId", "id_iss", "id_trade_site",
@@ -602,7 +658,7 @@ class EndOfDay(RuDataDF):
                         "duration", "pvbp", "convexity", "spread",
                         "boardid", "boardname", "exch", "currency"
                     ]
-                } for i in range(LIMIT) if chunk_isins[i] != ''
+                } for isin in chunk_isins if isin
             ]
 
 
@@ -638,8 +694,8 @@ class EndOfDayOnExchanges(RuDataDF):
             yield [
                 {
                     'codes': chunk_isins[20*i:20*(i+1)],
-                    'dateFrom': (last_day_month - timedelta(days=30)),
-                    'dateTo': last_day_month_str,
+                    'dateFrom': (last_day_month - timedelta(days=30)).strftime("%Y-%m-%d"),
+                    'dateTo': first_day_month_str,
                     'fields': [
                         "isin", "seccode", "secname", "name", "fintoolId", "id_iss", "id_trade_site",
                         "add_date", "update_date", "mat_date", "last_time",
@@ -725,7 +781,7 @@ class CompanyGroupMembers(RuDataDF):
             ]
 
 
-class CompanyGroups(RuDataDF):
+class CompanyGroups(RuDataPagesDF):
     """
     https://docs.efir-net.ru/dh2/#/Affiliate/CompanyGroups
     Получить состав групп по идентификаторам групп

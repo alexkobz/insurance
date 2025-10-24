@@ -1,9 +1,8 @@
 import os
-
 from clickhouse_connect import get_client
 from clickhouse_connect.driver.exceptions import OperationalError
 from dotenv import load_dotenv
-from functions.path import get_project_root, Path
+from src.utils.path import get_project_root, Path
 
 env_path: Path = Path.joinpath(get_project_root(), '.venv/.env')
 load_dotenv(env_path)
