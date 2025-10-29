@@ -16,23 +16,16 @@ pip install -r requirements.txt
 
 ## Краткая инструкция
 
-Есть 2 сервиса:
-
-1. Выгрузка ratings (ratings.ipynb) и cash_flow и stocks_data (stocks.ipynb)
    * По расписанию 
    ```bash 
-   docker compose up -f docker-compose-schedule.yml
+   docker compose up -f docker-compose.yml
    ```
    * Вручную
    ```bash 
    docker compose up -f docker-compose-manual.yml
    ```
-   Контейнер с postgres всегда должен быть running при запуске
+   Контейнер с ch всегда должен быть running при запуске
 
-2. Выгрузка prices (prices.ipynb) всегда только вручную через jupyter, так как перед каждым запуском нужно получить файлы
-   ```bash 
-   jupyter execute prices.ipynb
-   ```
 
 NB 
 * Файлы отправляются на почту. LOGIN_EMAIL и PASSWORD_EMAIL в .env файле
