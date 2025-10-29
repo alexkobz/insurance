@@ -1,21 +1,15 @@
 services:
-  postgres:
-    image: postgres:16
-    container_name: insurance-postgres-db
-    env_file:
-      - .venv/.env
-    volumes:
-      - insurance_postgres_volume:/var/lib/postgresql/data
+  clickhouse-server:
+    image: clickhouse/clickhouse-server:24.3.6
+    container_name: clickhouse-server
     ports:
-      - "5433:5432"
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres" ]
-      interval: 10s
-      retries: 5
-      start_period: 5s
+      - "8124:8123"  # HTTP interface
+      - "9000:9000"
+    volumes:
+#      - ./clickhouse/processed_configs/config.xml:/etc/clickhouse-server/config.xml
+#      - ./clickhouse/processed_configs/users.xml:/etc/clickhouse-server/users.xml
+      - insurance_clickhouse_volume:/var/lib/clickhouse
     restart: always
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   schedule:
     image: insurance:latest
@@ -30,9 +24,20 @@ services:
     volumes:
       - insurance_volume:/data
     depends_on:
-      - postgres
+      - clickhouse-server
+
+  ch-ui:
+    image: ghcr.io/caioricciuti/ch-ui:latest
+    restart: always
+    ports:
+      - "5522:5521"
+    env_file:
+      - .venv/.env
+    depends_on:
+      - clickhouse-server
 
 volumes:
-  insurance_postgres_volume:
   insurance_volume:
+    driver: local
+  insurance_clickhouse_volume:
     driver: local
