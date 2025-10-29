@@ -1,13 +1,10 @@
 import os
 import smtplib, ssl
-from datetime import datetime as dt
-from dotenv import load_dotenv
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from functions.get_date import last_day_month
-
+from src.utils.path import get_project_root
 
 def main(*filenames):
     # load_dotenv('.venv/.env')
@@ -25,7 +22,7 @@ def main(*filenames):
     message.attach(MIMEText(body, "plain"))
     
     for filename in filenames:
-        with open("./data/Output/" + filename, "rb") as attachment:
+        with open(f"{get_project_root()}/data/Output/" + filename, "rb") as attachment:
             part = MIMEBase("application", "octet-stream")
             part.set_payload(attachment.read())
             encoders.encode_base64(part)

@@ -1,15 +1,17 @@
 import logging
 import sys
+import time
 from datetime import datetime as dt
 from functools import wraps
 from pandas import DataFrame
-from time import sleep
 from asyncio import TimeoutError
+from src.utils.retries import retry
+from src.utils.path import get_project_root
 
 
 class Logger(logging.Logger):
     """
-    Класс для логирования. Логи в файле ./logger/logger.log
+    Класс для логирования. Логи в файле ./logs/logs.log
     """
     _instance: logging.Logger = None
 
@@ -19,7 +21,7 @@ class Logger(logging.Logger):
         else:
             cls._instance = object.__new__(cls)
             logging.basicConfig(
-                filename=f'./logger/logger_{dt.now().strftime("%Y%m%d%H%M%S")}.log',
+                filename=f'{get_project_root()}/logs/logger_{dt.now().strftime("%Y%m%d%H%M%S")}.log',
                 filemode='a+',
                 level=logging.INFO,
                 format='%(process)d - %(asctime)s - %(levelname)s - %(message)s'
@@ -46,31 +48,20 @@ class Logger(logging.Logger):
         return wrapper
 
     @classmethod
+    @retry(
+        exceptions=(TimeoutError, ConnectionError),
+        tries=3,
+        delay=60,
+    )
     def logDF(cls, func):
         """
         Записывает начало и конец посылания запросов для определенного адреса
         """
         @wraps(func)
         def wrapper(*args, **kwargs):
-            retries = 3
-            while retries:
-                try:
-                    cls._instance.info(f"{args[0].key} started")
-                    result: DataFrame = func(*args, **kwargs)
-                    cls._instance.info(f"{args[0].key} finished. {args[0].key} shape {result.shape}")
-                    return result
-                except Warning as w:
-                    cls._instance.warning(msg=f"Warning raised in {args[0].key}.\n{str(w)}\n")
-                except ConnectionError as ce:
-                    cls._instance.exception(msg=f"ConnectionError raised in {args[0].key}.\n{str(ce)}\nRetry\n")
-                    retries -= 1
-                    sleep(600)
-                except TimeoutError as te:
-                    cls._instance.exception(msg=f"TimeoutError raised in {args[0].key}.\n{str(te)}\nRetry\n")
-                    retries -= 1
-                    sleep(600)
-                except Exception as e:
-                    cls._instance.exception(msg=f"Exception raised in {args[0].key}.\n{str(e)}\nRetry\n")
-                    retries -= 1
-                    sleep(600)
+            cls._instance.info(f"{args[0].key} started")
+            result: DataFrame = func(*args, **kwargs)
+            cls._instance.info(f"{args[0].key} finished. {args[0].key} shape {result.shape}")
+            time.sleep(1)
+            return result
         return wrapper

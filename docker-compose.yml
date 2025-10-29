@@ -1,5 +1,4 @@
 services:
-
   clickhouse-server:
     image: clickhouse/clickhouse-server:24.3.6
     container_name: clickhouse-server
@@ -12,14 +11,13 @@ services:
       - insurance_clickhouse_volume:/var/lib/clickhouse
     restart: always
 
-  manual-run:
+  schedule:
     image: insurance:latest
-    container_name: insurance_manual_run
-    command: >
-      bash -c "
-        /usr/local/bin/jupyter execute ~/../ratings.ipynb;
-        /usr/local/bin/jupyter execute ~/../stocks.ipynb
-      "
+    container_name: insurance_schedule
+    command: bash -c "
+      printenv > /etc/environment; 
+      crontab /etc/cron.monthly/crontab;
+      cron -f && tail -f /var/log/cron.log"
     restart: no
     env_file:
       - .venv/.env
@@ -28,7 +26,6 @@ services:
     depends_on:
       - clickhouse-server
 
-  # OPTIONAL
   ch-ui:
     image: ghcr.io/caioricciuti/ch-ui:latest
     restart: always
