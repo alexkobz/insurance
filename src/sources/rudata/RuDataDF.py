@@ -81,7 +81,7 @@ class RuDataDF(RuDataStrategy):
         try:
             return await asyncio.wait_for(task, timeout=timeout)
         except asyncio.TimeoutError:
-            return "Timed out"
+            return []
 
     @retry(
         exceptions=(TimeoutError, ConnectionError, Exception),

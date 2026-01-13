@@ -252,6 +252,22 @@ class MoexSecurities(RuDataPagesDF):
                 } for i in range(LIMIT)
             ]
 
+class MoexStocks(RuDataPagesDF):
+    """
+    https://docs.efir-net.ru/dh2/#/Moex/Securities?id=post-securities
+    Получить список торгуемых инструментов.
+    """
+    url = "https://dh2.efir-net.ru/v2/Moex/Stocks"
+
+    def payloads(self):
+        for pageNum in range(1, 10_000, LIMIT):
+            yield [
+                {
+                    'pageNum': pageNum + i,
+                    'pageSize': 300,
+                    'filter': ''
+                } for i in range(LIMIT)
+            ]
 
 class HistoryStockBonds(RuDataPagesDF):
     """
@@ -519,22 +535,38 @@ class CurrencyRate(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Archive/CurrencyRate"
 
     def payloads(self):
-        currencies: List[str] = (
-            self.client.query_df(
-                f"""
-                        SELECT DISTINCT currency
-                        FROM currencies
-                        """
-            )['currency']
-            .to_list()
+        currencies: pd.DataFrame = self.client.query_df(
+            f"""
+                SELECT DISTINCT
+                    upper(currency) AS from,
+                    'RUB' AS to
+                FROM currencies
+                WHERE upper(currency) != 'RUB'
+
+                UNION DISTINCT
+
+                SELECT DISTINCT
+                    upper(currencyFTName) AS from,
+                    upper(faceFTName) AS to
+                FROM CalendarV2
+                WHERE upper(currencyFTName) != upper(faceFTName) AND upper(currencyFTName) != 'NONE'
+
+                UNION DISTINCT
+
+                SELECT DISTINCT
+                    upper(faceFTName) AS from,
+                    upper(currencyFTName) AS to
+                FROM CalendarV2
+                WHERE upper(currencyFTName) != upper(faceFTName)  AND upper(currencyFTName) != 'NONE'
+                """
         )
-        if not currencies:
+        if currencies.empty:
             raise ValueError('currencies must not be empty. Please check the currencies table for data.')
 
-        for currency in currencies:
+        for i, row in currencies.iterrows():
             yield {
-                    'from': currency,
-                    'to': 'RUB',
+                    'from': row['from'],
+                    'to': row['to'],
                     'date': last_day_month_str,
                 }
 
@@ -543,7 +575,8 @@ class CurrencyRate(RuDataDF):
         for payload in CurrencyRate().payloads():
             ans = requests.post(self.url, json=payload, headers=self.headers)
             result: dict = ans.json()
-            result["currency"] = payload['from']
+            result["from"] = payload['from']
+            result["to"] = payload['to']
             currencies_rudata.append(result)
             sleep(1)
         return pd.DataFrame(currencies_rudata)
@@ -620,7 +653,7 @@ class EndOfDay(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Archive/EndOfDay"
 
     def payloads(self):
-        # isins = pd.read_excel('/Users/alexander/PycharmProjects/insurance_mine/data/Input/ISIN_072025.xlsx', dtype=str)['code_isin'].tolist()
+        # isins = pd.read_excel('/Users/alexander/PycharmProjects/insurance_mine/data/input/ISIN_072025.xlsx', dtype=str)['code_isin'].tolist()
         isins: List[str] = (
             self.client.query_df(
                 f"""
