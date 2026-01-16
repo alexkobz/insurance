@@ -26,6 +26,9 @@ services:
     depends_on:
       - clickhouse-server
 
+  # OPTIONAL
+  #  http://localhost:8124
+  #  default
   ch-ui:
     image: ghcr.io/caioricciuti/ch-ui:latest
     restart: always
@@ -38,6 +41,6 @@ services:
 
 volumes:
   insurance_volume:
-    driver: local
+    external: true
   insurance_clickhouse_volume:
-    driver: local
+    external: true

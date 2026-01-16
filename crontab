@@ -12,4 +12,6 @@
 0 4 1 * * /usr/local/bin/jupyter execute ~/../ratings.ipynb >> /var/log/cron.log 2>&1;
           /usr/local/bin/jupyter execute ~/../stocks.ipynb >> /var/log/cron.log 2>&1;
           /usr/local/bin/jupyter execute ~/../prices.ipynb >> /var/log/cron.log 2>&1;
-          /usr/local/bin/jupyter execute ~/../groups.ipynb >> /var/log/cron.log 2>&1
+          # /usr/local/bin/jupyter execute ~/../groups.ipynb >> /var/log/cron.log 2>&1;
+          echo "Success"
+          

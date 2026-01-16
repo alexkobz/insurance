@@ -18,7 +18,8 @@ services:
     command: >
       bash -c "
         /usr/local/bin/jupyter execute ~/../ratings.ipynb;
-        /usr/local/bin/jupyter execute ~/../stocks.ipynb
+        /usr/local/bin/jupyter execute ~/../stocks.ipynb;
+        /usr/local/bin/jupyter execute ~/../prices.ipynb
       "
     restart: no
     env_file:
@@ -29,6 +30,8 @@ services:
       - clickhouse-server
 
   # OPTIONAL
+  #  http://localhost:8124
+  #  default
   ch-ui:
     image: ghcr.io/caioricciuti/ch-ui:latest
     restart: always
@@ -41,6 +44,6 @@ services:
 
 volumes:
   insurance_volume:
-    driver: local
+    external: true
   insurance_clickhouse_volume:
-    driver: local
+    external: true

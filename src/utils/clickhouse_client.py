@@ -4,7 +4,7 @@ from clickhouse_connect.driver.exceptions import OperationalError
 from dotenv import load_dotenv
 from src.utils.path import get_project_root, Path
 
-env_path: Path = Path.joinpath(get_project_root(), '.venv/.env')
+env_path: Path = get_project_root() / '.venv' / '.env'
 load_dotenv(env_path)
 
 try:
@@ -29,46 +29,64 @@ import pandas as pd
 import numpy as np
 import json
 
-def get_type_map():
-    return {
-        'bool': ('UInt8', lambda s: s.astype(np.uint8)),
-        'int8': ('Int8', lambda s: s),
-        'int16': ('Int16', lambda s: s),
-        'int32': ('Int32', lambda s: s),
-        'int64': ('Int64', lambda s: s),
-        'uint8': ('UInt8', lambda s: s),
-        'uint16': ('UInt16', lambda s: s),
-        'uint32': ('UInt32', lambda s: s),
-        'uint64': ('UInt64', lambda s: s),
-        'float32': ('Float32', lambda s: s),
-        'float64': ('Float64', lambda s: s),
-        'category': ('String', lambda s: s.astype(str)),
-        'datetime64[ns]': ('DateTime', lambda s: s),
-        'object': ('String', lambda s: s.apply(
-            lambda x: json.dumps(x) if isinstance(x, (dict, list)) else str(x)
-        )),
-    }
 
 def prepare_for_clickhouse(df: pd.DataFrame):
-    type_map = get_type_map()
-    df_converted = pd.DataFrame()
+    df = df.copy()
     ch_types = {}
 
     for col in df.columns:
-        dtype = str(df[col].dtype)
+        s = df[col]
+        dtype = s.dtype
 
-        # Special fallback for pandas treating dicts/lists as "object"
-        if dtype == 'object':
-            # Check first non-null value
-            sample = df[col].dropna().iloc[0] if not df[col].dropna().empty else ''
+        # ---------- BOOL ----------
+        if pd.api.types.is_bool_dtype(dtype):
+            ch_types[col] = 'Nullable(UInt8)' if s.isna().any() else 'UInt8'
+            df[col] = s.astype('UInt8')
+            continue
+
+        # ---------- INTEGER ----------
+        if pd.api.types.is_integer_dtype(dtype):
+            ch_types[col] = 'Nullable(Int64)'
+            continue
+
+        # ---------- FLOAT ----------
+        if pd.api.types.is_float_dtype(dtype):
+            ch_types[col] = 'Nullable(Float64)'
+            continue
+
+        # ---------- DATETIME ----------
+        if pd.api.types.is_datetime64_any_dtype(dtype):
+            ch_types[col] = 'Nullable(DateTime64(3))'
+            df[col] = pd.to_datetime(s)
+            continue
+
+        # ---------- OBJECT ----------
+        if pd.api.types.is_object_dtype(dtype):
+            # detect actual content
+            sample = s.dropna().iloc[0] if not s.dropna().empty else None
+
             if isinstance(sample, (dict, list)):
-                dtype = 'object'  # handled by mapping
-            else:
-                dtype = 'object'
+                ch_types[col] = 'Nullable(String)'
+                df[col] = s.apply(
+                    lambda x: json.dumps(x, ensure_ascii=False)
+                    if isinstance(x, (dict, list)) else None
+                )
+                continue
 
-        # Map dtype → (ClickHouse type, conversion function)
-        ch_type, convert_func = type_map.get(dtype, ('String', lambda s: s.astype(str)))
-        df_converted[col] = convert_func(df[col])
-        ch_types[col] = ch_type
+            if isinstance(sample, bool):
+                ch_types[col] = 'Nullable(UInt8)'
+                df[col] = s.apply(
+                    lambda x: int(x) if isinstance(x, bool) else None
+                )
+                continue
 
-    return df_converted
+            # default STRING
+            ch_types[col] = 'Nullable(String)'
+            df[col] = s.astype(str).where(s.notna(), None)
+            continue
+
+        # ---------- FALLBACK ----------
+        ch_types[col] = 'Nullable(String)'
+        df[col] = s.astype(str).where(s.notna(), None)
+
+    return df

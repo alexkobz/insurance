@@ -8,12 +8,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY crontab /etc/cron.monthly/crontab
-COPY data/Output data/Output
-COPY src/utils functions
-COPY src/sources/rudata rudata
-COPY notebooks/ratings.ipynb .
-COPY notebooks/prices.ipynb .
-COPY notebooks/stocks.ipynb .
+COPY data/output data/output
+COPY src src
+COPY ratings.ipynb .
+COPY prices.ipynb .
+COPY stocks.ipynb .
 
 RUN mkdir "logs"
 RUN chmod +x /etc/cron.monthly/crontab

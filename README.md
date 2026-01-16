@@ -18,7 +18,7 @@ pip install -r requirements.txt
 
    * По расписанию 
    ```bash 
-   docker compose up -f docker-compose.yml
+   docker compose up -f docker-compose-schedule.yml
    ```
    * Вручную
    ```bash 
