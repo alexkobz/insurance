@@ -46,10 +46,7 @@ def prepare_for_clickhouse(df: pd.DataFrame):
 
         # ---------- INTEGER ----------
         if pd.api.types.is_integer_dtype(dtype):
-            if s.isna().any():
-                ch_types[col] = 'Nullable(Int64)'
-            else:
-                ch_types[col] = 'Int64'
+            ch_types[col] = 'Nullable(Int64)'
             continue
 
         # ---------- FLOAT ----------

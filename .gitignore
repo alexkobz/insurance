@@ -4,6 +4,7 @@
 /.idea/
 /venv/
 /.venv/
+/data/output/
 /python39/
 /python312/
 *.log
