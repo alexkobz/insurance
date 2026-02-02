@@ -30,63 +30,61 @@ import numpy as np
 import json
 
 
-def prepare_for_clickhouse(df: pd.DataFrame):
+def prepare_for_clickhouse(
+    df: pd.DataFrame,
+    table: str,
+    database: str = 'default',
+) -> pd.DataFrame:
+    """
+    Cast pandas DataFrame строго под схему ClickHouse таблицы.
+    Типы берутся из DESCRIBE TABLE.
+    """
     df = df.copy()
-    ch_types = {}
 
-    for col in df.columns:
-        s = df[col]
-        dtype = s.dtype
+    schema = client.query(
+        f"DESCRIBE TABLE {database}.{table}"
+    ).result_rows
 
-        # ---------- BOOL ----------
-        if pd.api.types.is_bool_dtype(dtype):
-            ch_types[col] = 'Nullable(UInt8)' if s.isna().any() else 'UInt8'
-            df[col] = s.astype('UInt8')
-            continue
+    for col, ch_type, *_ in schema:
+        if col not in df.columns:
+            df[col] = None
+
+        base_type = ch_type.replace('Nullable(', '').replace(')', '')
+
+        # ---------- STRING ----------
+        if base_type == 'String':
+            df[col] = df[col].astype('string')
 
         # ---------- INTEGER ----------
-        if pd.api.types.is_integer_dtype(dtype):
-            ch_types[col] = 'Nullable(Int64)'
-            continue
+        elif base_type in (
+            'Int8','Int16','Int32','Int64',
+            'UInt8','UInt16','UInt32','UInt64'
+        ):
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            df[col] = df[col].astype('Int64')
 
         # ---------- FLOAT ----------
-        if pd.api.types.is_float_dtype(dtype):
-            ch_types[col] = 'Nullable(Float64)'
-            continue
+        elif base_type in ('Float32', 'Float64'):
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        # ---------- DATE ----------
+        elif base_type == 'Date':
+            df[col] = pd.to_datetime(df[col], errors='coerce').dt.date
 
         # ---------- DATETIME ----------
-        if pd.api.types.is_datetime64_any_dtype(dtype):
-            ch_types[col] = 'Nullable(DateTime64(3))'
-            df[col] = pd.to_datetime(s)
-            continue
+        elif base_type.startswith('DateTime'):
+            df[col] = pd.to_datetime(df[col], errors='coerce')
 
-        # ---------- OBJECT ----------
-        if pd.api.types.is_object_dtype(dtype):
-            # detect actual content
-            sample = s.dropna().iloc[0] if not s.dropna().empty else None
-
-            if isinstance(sample, (dict, list)):
-                ch_types[col] = 'Nullable(String)'
-                df[col] = s.apply(
-                    lambda x: json.dumps(x, ensure_ascii=False)
-                    if isinstance(x, (dict, list)) else None
-                )
-                continue
-
-            if isinstance(sample, bool):
-                ch_types[col] = 'Nullable(UInt8)'
-                df[col] = s.apply(
-                    lambda x: int(x) if isinstance(x, bool) else None
-                )
-                continue
-
-            # default STRING
-            ch_types[col] = 'Nullable(String)'
-            df[col] = s.astype(str).where(s.notna(), None)
-            continue
+        # ---------- BOOL (через UInt8) ----------
+        elif base_type == 'Bool':
+            df[col] = df[col].astype('boolean').astype('UInt8')
 
         # ---------- FALLBACK ----------
-        ch_types[col] = 'Nullable(String)'
-        df[col] = s.astype(str).where(s.notna(), None)
+        else:
+            df[col] = df[col].astype('string')
+
+    # упорядочиваем колонки строго как в таблице
+    ordered_cols = [c[0] for c in schema]
+    df = df[ordered_cols]
 
     return df

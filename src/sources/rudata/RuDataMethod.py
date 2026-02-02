@@ -6,6 +6,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
+from src.utils.clickhouse_client import client as clickhouse_client, prepare_for_clickhouse
 from src.utils.divide_chunks import divide_chunks
 from src.utils.get_date import (
     last_day_month_str,
@@ -472,11 +473,13 @@ class CompanyRatingsTable(RuDataDF):
 
     def payloads(self):
         fininstids: List[int] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fininstid
                 FROM "Emitents"
-                WHERE _partition_id = '{self.report_yearmonth}'
+                WHERE 1=1
+                    AND _partition_id = '{self.report_yearmonth}'
+                    AND coalesce(fininstid, 0) != 0
                 """
             )['fininstid']
             .to_list()
@@ -505,11 +508,13 @@ class SecurityRatingTable(RuDataDF):
 
     def payloads(self):
         isins: List[int] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT isincode
                 FROM "FintoolReferenceData"
-                WHERE _partition_id = '{self.report_yearmonth}'
+                WHERE 1=1
+                    AND _partition_id = '{self.report_yearmonth}'
+                    AND coalesce(isincode, '') != ''
                 """
             )['isincode']
             .to_list()
@@ -535,7 +540,7 @@ class CurrencyRate(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Archive/CurrencyRate"
 
     def payloads(self):
-        currencies: pd.DataFrame = self.client.query_df(
+        currencies: pd.DataFrame = clickhouse_client.query_df(
             f"""
                 SELECT DISTINCT
                     upper(currency) AS from,
@@ -591,11 +596,13 @@ class AccruedInterestOnDate(RuDataDF):
 
     def payloads(self):
         fintoolids: List[int] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fintoolid
                 FROM "FintoolReferenceData"
-                WHERE _partition_id = '{self.report_yearmonth}'
+                WHERE 1=1
+                    AND _partition_id = '{self.report_yearmonth}'
+                    AND coalesce(fintoolid, 0) != 0
                 """
             )['fintoolid']
             .to_list()
@@ -622,11 +629,13 @@ class FloatersOnPeriod(RuDataDF):
 
     def payloads(self):
         fintoolids: List[int] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fintoolId
                 FROM "FloaterData"
-                WHERE _partition_id = '{self.report_yearmonth}'
+                WHERE 1=1
+                    AND _partition_id = '{self.report_yearmonth}'
+                    AND coalesce(fintoolId, 0) != 0
                 """
             )['fintoolId']
             .to_list()
@@ -655,20 +664,22 @@ class EndOfDay(RuDataDF):
     def payloads(self):
         # isins = pd.read_excel('/Users/alexander/PycharmProjects/insurance_mine/data/input/ISIN_072025.xlsx', dtype=str)['code_isin'].tolist()
         isins: List[str] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                         SELECT DISTINCT isincode
                         FROM "FintoolReferenceData"
-                        WHERE _partition_id = '{self.report_yearmonth}' 
-                        AND tradesite IN 
-                        (
-                            170,
-                            183,
-                            193,
-                            207,
-                            285,
-                            297,
-                        )
+                        WHERE 1=1
+                            AND _partition_id = '{self.report_yearmonth}'
+                            AND coalesce(isincode, '') != ''
+                            AND tradesite IN 
+                            (
+                                170,
+                                183,
+                                193,
+                                207,
+                                285,
+                                297,
+                            )
                         """
             )['isincode']
             .to_list()
@@ -704,12 +715,14 @@ class EndOfDayOnExchanges(RuDataDF):
 
     def payloads(self):
         isins: List[str] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT isincode
                 FROM "FintoolReferenceData"
-                WHERE _partition_id = '{self.report_yearmonth}' AND
-                    (
+                WHERE 1=1
+                    AND _partition_id = '{self.report_yearmonth}'
+                    AND coalesce(isincode, '') != '' 
+                    AND (
                     fintooltype = 'Облигация' AND (toDate(endmtydate) > today() - INTERVAL 1 YEAR OR endmtydate IS NULL) OR
                     fintooltype = 'Фонд' OR
                     fintooltype = 'Акция' OR
@@ -751,11 +764,13 @@ class FloaterData(RuDataDF):
 
     def payloads(self):
         fintoolids: List[int] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fintoolid
                 FROM "FintoolReferenceData"
-                WHERE _partition_id = '{self.report_yearmonth}'
+                WHERE 1=1
+                    AND _partition_id = '{self.report_yearmonth}'
+                    AND coalesce(fintoolid, 0) != 0
                 """
             )['fintoolid']
             .to_list()
@@ -793,7 +808,7 @@ class CompanyGroupMembers(RuDataDF):
 
     def payloads(self):
         inns: List[int] = (
-            self.client.query_df(
+            clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT inn
                 FROM "Emitents"

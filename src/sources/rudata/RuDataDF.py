@@ -126,21 +126,24 @@ class RuDataDF(RuDataStrategy):
             else:
                 return []
 
+    def get_sample(self, **kwargs) -> pd.DataFrame:
+        df = self._select_df()
+        if df.empty and kwargs:
+            payload: dict = list(self.payloads())[0][0]
+            for k, v in kwargs.items():
+                payload[k] = v
+            df: pd.DataFrame = asyncio.run(self.send_requests(payloads=[[payload]]))
+        return df
+
     @property
     def df(self, **kwargs) -> pd.DataFrame:
         df = self._select_df()
         if df.empty:
             self._check_account()
-            if kwargs is None:
-                df: pd.DataFrame = asyncio.run(self.send_requests())
-                df: pd.DataFrame = prepare_for_clickhouse(df.copy())
-                df['report_date'] = RuDataDF.report_date
-                clickhouse_client.insert_df(self.name, df)
-            else:
-                payloads: Iterable[List[dict]] = self.payloads()[0]
-                for k, v in kwargs.items():
-                    payloads[k] = v
-                df: pd.DataFrame = asyncio.run(self.send_requests(payloads=payloads))
+            df: pd.DataFrame = asyncio.run(self.send_requests())
+            df: pd.DataFrame = prepare_for_clickhouse(df.copy(), self.name)
+            df['report_date'] = RuDataDF.report_date
+            clickhouse_client.insert_df(self.name, df)
         self._df = df.loc[:, df.columns != 'report_date']
         return self._df
 
