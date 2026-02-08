@@ -10,7 +10,10 @@ from src.utils.clickhouse_client import client as clickhouse_client, prepare_for
 from src.utils.retries import retry
 from src.logger.Logger import Logger
 from src.sources.rudata.RuData import RuDataStrategy
+import ssl
+import certifi
 
+ssl_ctx = ssl.create_default_context(cafile=certifi.where())
 
 LIMIT = 5
 logger = Logger()
@@ -33,6 +36,7 @@ class RuDataDF(RuDataStrategy):
         'content-type': 'application/json',
         'Accept': 'application/json',
     }
+    _authorized: bool = False
     semaphore: asyncio.Semaphore = asyncio.Semaphore(LIMIT)
 
     def __init__(self):
@@ -58,7 +62,7 @@ class RuDataDF(RuDataStrategy):
         return df
 
     def _check_account(self) -> None:
-        if 'Authorization' not in self.headers or self.headers['Authorization'] is None or self.headers['Authorization'] == 'Bearer ':
+        if not self._authorized:
             raise ValueError("Authorization header is not set. Run Account()")
 
     def payloads(self):
@@ -107,10 +111,11 @@ class RuDataDF(RuDataStrategy):
 
     async def post(self, session, payload):
         async with self.semaphore, session.post(
-                self.url,
-                json=payload,
-                headers=self.headers,
-                timeout=60
+            self.url,
+            json=payload,
+            headers=self.headers,
+            timeout=60,
+            ssl=ssl_ctx,
         ) as response:
             if response.ok:
                 try:
@@ -128,11 +133,14 @@ class RuDataDF(RuDataStrategy):
 
     def get_sample(self, **kwargs) -> pd.DataFrame:
         df = self._select_df()
-        if df.empty and kwargs:
-            payload: dict = list(self.payloads())[0][0]
-            for k, v in kwargs.items():
-                payload[k] = v
-            df: pd.DataFrame = asyncio.run(self.send_requests(payloads=[[payload]]))
+        if df.empty:
+            if kwargs:
+                payload: dict = list(self.payloads())[0][0]
+                for k, v in kwargs.items():
+                    payload[k] = v
+                df: pd.DataFrame = asyncio.run(self.send_requests(payloads=[[payload]]))
+            else:
+                df: pd.DataFrame = asyncio.run(self.send_requests())
         return df
 
     @property

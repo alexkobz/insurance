@@ -37,6 +37,7 @@ class Account(RuDataDF):
         response: Dict[str, str] = self.send_requests()
         self._token_str: str = response["token"]
         self.set_headers({"Authorization": "Bearer " + self._token_str})
+        self._authorized: bool = True
         sleep(1)
 
     @staticmethod
@@ -472,7 +473,7 @@ class CompanyRatingsTable(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Rating/CompanyRatingsTable"
 
     def payloads(self):
-        fininstids: List[int] = (
+        fininstids: List[int] = sorted(
             clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fininstid
@@ -507,7 +508,7 @@ class SecurityRatingTable(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Rating/SecurityRatingTable"
 
     def payloads(self):
-        isins: List[int] = (
+        isins: List[int] = sorted(
             clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT isincode
@@ -595,7 +596,7 @@ class AccruedInterestOnDate(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/AccruedInterest/AccruedInterestOnDate"
 
     def payloads(self):
-        fintoolids: List[int] = (
+        fintoolids: List[int] = sorted(
             clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fintoolid
@@ -628,7 +629,7 @@ class FloatersOnPeriod(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/AccruedInterest/floaters-on-period"
 
     def payloads(self):
-        fintoolids: List[int] = (
+        fintoolids: List[int] = sorted(
             clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fintoolId
@@ -663,7 +664,7 @@ class EndOfDay(RuDataDF):
 
     def payloads(self):
         # isins = pd.read_excel('/Users/alexander/PycharmProjects/insurance_mine/data/input/ISIN_072025.xlsx', dtype=str)['code_isin'].tolist()
-        isins: List[str] = (
+        isins: List[str] = sorted(
             clickhouse_client.query_df(
                 f"""
                         SELECT DISTINCT isincode
@@ -714,7 +715,7 @@ class EndOfDayOnExchanges(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Archive/EndOfDayOnExchanges"
 
     def payloads(self):
-        isins: List[str] = (
+        isins: List[str] = sorted(
             clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT isincode
@@ -763,7 +764,7 @@ class FloaterData(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Bond/FloaterData"
 
     def payloads(self):
-        fintoolids: List[int] = (
+        fintoolids: List[int] = sorted(
             clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT fintoolid
@@ -807,12 +808,13 @@ class CompanyGroupMembers(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Affiliate/CompanyGroupMembers"
 
     def payloads(self):
-        inns: List[int] = (
+        inns: List[str] = sorted(
             clickhouse_client.query_df(
                 f"""
                 SELECT DISTINCT inn
                 FROM "Emitents"
                 WHERE _partition_id = '{self.report_yearmonth}'
+                    AND coalesce(inn, '') != ''
                 """
             )['inn']
             .to_list()
@@ -820,10 +822,10 @@ class CompanyGroupMembers(RuDataDF):
         if not inns:
             raise ValueError('inns must not be empty. Please check the Emitents table for data.')
 
-        for chunk_inns in divide_chunks(inns, LIMIT):
+        for chunk_inns in divide_chunks(inns, 100 * LIMIT):
             yield [
                 {
-                    'memberInns': chunk_inns[i],
+                    'memberInns': chunk_inns[100 * i:100 * (i + 1)],
                     'actualDate': last_day_month_str,
                 } for i in range(LIMIT)
             ]

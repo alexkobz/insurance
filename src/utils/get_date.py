@@ -31,6 +31,7 @@ def get_last_work_date_month() -> date:
         )
         holidays = pd.read_csv(BytesIO(holidays_request.content), header=None).rename(columns={0: 'holiday_date'})
         holidays['holiday_date'] = pd.to_datetime(holidays['holiday_date'])
+        holidays['holiday_year'] = holidays['holiday_date'].dt.year
         clickhouse_client.insert_df('holidays', holidays)
     while last_day_month_copy in holidays['holiday_date'].dt.date.tolist():
         last_day_month_copy -= timedelta(days=1)
