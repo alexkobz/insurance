@@ -6,7 +6,7 @@ from src.utils.clickhouse_client import client as clickhouse_client
 
 # for manual run change the varibale first_day_month: date = date(1970, 1, 1)
 first_day_month: date = date.today().replace(day=1)
-# first_day_month: date = date(2025, 12, 1)
+# first_day_month: date = date(2026, 1, 1)
 first_day_month_str: str = first_day_month.strftime('%Y-%m-%d')
 last_day_month: date = first_day_month - timedelta(days=1)
 last_day_month_str: str = last_day_month.strftime("%Y-%m-%d")

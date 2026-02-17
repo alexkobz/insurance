@@ -37,7 +37,7 @@ class Account(RuDataDF):
         response: Dict[str, str] = self.send_requests()
         self._token_str: str = response["token"]
         self.set_headers({"Authorization": "Bearer " + self._token_str})
-        self._authorized: bool = True
+        self.set_authorized(True)
         sleep(1)
 
     @staticmethod
@@ -184,8 +184,10 @@ class RUPriceHistory(RuDataPagesDF):
     url = "https://dh2.efir-net.ru/v2/RUPrice/History"
 
     def payloads(self):
-        dateFrom = (dt.strptime(last_day_month_str, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
-        dateTo = last_day_month_str
+        # dateFrom = (dt.strptime(last_day_month_str, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
+        dateFrom = '2025-12-20'
+        dateTo = '2026-01-10'
+        # dateTo = last_day_month_str
         for pageNum in range(1, 10_000, LIMIT):
             yield [
                 {
@@ -615,7 +617,6 @@ class AccruedInterestOnDate(RuDataDF):
             yield [
                 {
                     'fintoolIds': chunk_fintoolids[100 * i:100 * (i + 1)],
-                    'endDate': last_day_month_str,
                     'cashFlowCalcDate': last_day_month_str,
                 } for i in range(LIMIT)
             ]
@@ -663,7 +664,6 @@ class EndOfDay(RuDataDF):
     url = "https://dh2.efir-net.ru/v2/Archive/EndOfDay"
 
     def payloads(self):
-        # isins = pd.read_excel('/Users/alexander/PycharmProjects/insurance_mine/data/input/ISIN_072025.xlsx', dtype=str)['code_isin'].tolist()
         isins: List[str] = sorted(
             clickhouse_client.query_df(
                 f"""

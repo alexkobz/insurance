@@ -1,11 +1,12 @@
-import requests
 import pandas as pd
-from pysimplesoap.client import SoapClient
 from collections import OrderedDict
 import xmltodict
 import xml.etree.ElementTree as ET
 from contextlib import suppress
 from datetime import datetime as dt
+from lxml import etree
+from zeep import Client, xsd
+from zeep.plugins import HistoryPlugin
 
 
 class CBR_Soap:
@@ -56,24 +57,44 @@ class CBR_Soap:
     tags = {'GetCursDynamic': 'ValuteData'}
 
     def __init__(self):
-        client = SoapClient(wsdl=self.wsdl_url_daily, namespace=self.cbr_namespace, trace=False)
-        wsdl_info = client.wsdl_parse(self.wsdl_url_daily)['DailyInfo']['ports']['DailyInfoSoap']['operations']
+        daily_history = HistoryPlugin()
+        sec_history = HistoryPlugin()
+        daily_client = Client(self.wsdl_url_daily, plugins=[daily_history])
+        sec_client = Client(self.wsdl_url_sec, plugins=[sec_history])
 
-        def modify_wsdl_info(wsdl_info, url):
-            for op in wsdl_info:
-                pointer = wsdl_info[op]['input']
-                for x in pointer:
-                    pointer[x] = OrderedDict(pointer[x])
-                # 'outputs' are unpicklable and not used here, delete them from
-                del wsdl_info[op]['output']
-                wsdl_info[op]['url'] = url
-            return wsdl_info
+        self.wsdl_info = {}
+        self.wsdl_info.update(self._build_wsdl_info(daily_client, daily_history))
+        self.wsdl_info.update(self._build_wsdl_info(sec_client, sec_history))
 
-        self.wsdl_info = modify_wsdl_info(wsdl_info, self.url_daily)
-        client = SoapClient(wsdl=self.wsdl_url_sec, namespace=self.cbr_namespace, trace=False)
-        wsdl_info = client.wsdl_parse(self.wsdl_url_sec)['SecInfo']['ports']['SecInfoSoap']['operations']
-        wsdl_info = modify_wsdl_info(wsdl_info, self.url_sec)
-        self.wsdl_info.update(wsdl_info)
+    @staticmethod
+    def _map_xsd_type(xsd_type):
+        if isinstance(xsd_type, (xsd.types.builtins.Date, xsd.types.builtins.DateTime)):
+            return dt
+        if isinstance(xsd_type, xsd.types.builtins.Boolean):
+            return bool
+        return str
+
+    def _build_wsdl_info(self, client, history):
+        wsdl_info = {}
+        for service in client.wsdl.services.values():
+            for port in service.ports.values():
+                for op_name, operation in port.binding._operations.items():
+                    params = OrderedDict()
+                    body = operation.input.body
+                    if body is not None:
+                        if hasattr(body, "type") and hasattr(body.type, "elements"):
+                            for name, element in body.type.elements:
+                                params[name] = self._map_xsd_type(element.type)
+                        elif hasattr(body, "elements"):
+                            for name, element in body.elements:
+                                params[name] = self._map_xsd_type(element.type)
+                    wsdl_info[op_name] = {
+                        'documentation': getattr(operation, "documentation", None),
+                        'input': {'args': params},
+                        'client': client,
+                        'history': history,
+                    }
+        return wsdl_info
 
     def show_operations(self):
         for op in self.wsdl_info:
@@ -87,7 +108,7 @@ class CBR_Soap:
         op_params = op_info['input'][next(iter(op_info['input']))]
         print('Operation %s requires following arguments: %s' % (operation, op_params))
 
-    def make_xml_param_string(self, operation):
+    def make_params_dict(self, operation):
         if operation not in self.wsdl_info.keys():
             raise KeyError("Operation not recognised:" + operation,
                            "Use function CBR_Soap.show_operations() to view all available operations")
@@ -97,37 +118,32 @@ class CBR_Soap:
         if len(self.args) != len(op_params):
             raise Exception('Operation %s requires following arguments: %s' % (operation, op_params))
 
-        self.param_string = ''
+        params = OrderedDict()
         for i, param in enumerate(op_params):
             value = self.args[i]
             if op_params[param] is dt:
-                if not isinstance(value, str): value = value.strftime("%Y-%m-%d")
+                if not isinstance(value, str):
+                    value = value.strftime("%Y-%m-%d")
             if op_params[param] is bool:
-                if not isinstance(value, str): value = str(value).lower()
-            self.param_string += '<web:%(param)s>%(val)s</web:%(param)s>' % {'param': param, 'val': value}
+                if isinstance(value, str):
+                    value = value.strip().lower() in ("true", "1", "yes")
+                else:
+                    value = bool(value)
+            params[param] = value
+        return params
 
-    def make_body(self):
-
-        return """<?xml version="1.0" encoding="utf-8"?>
-        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="%(ns)s">
-        <soapenv:Header/>
-        <soapenv:Body>
-            <web:%(operation)s>
-                %(params)s
-            </web:%(operation)s>
-        </soapenv:Body>
-        </soapenv:Envelope>
-        """ % {
-            'ns': self.cbr_namespace,
-            'operation': self.operation,
-            'params': self.param_string
-        }
-
-    def make_headers(self):
-        return {
-            'Content-Type': 'text/xml; charset=utf-8',
-            'SOAPAction': 'http://web.cbr.ru/%s' % self.operation
-        }
+    def _call_operation(self, operation, params):
+        op_info = self.wsdl_info[operation]
+        client = op_info['client']
+        history = op_info['history']
+        if params:
+            getattr(client.service, operation)(**params)
+        else:
+            getattr(client.service, operation)()
+        envelope = history.last_received.get("envelope")
+        if envelope is None:
+            raise RuntimeError("SOAP response not available in history plugin")
+        return etree.tostring(envelope, encoding="utf-8")
 
     def get_data(self, operation, *args, tag=""):
         """SOAP call to CBR backend"""
@@ -137,22 +153,20 @@ class CBR_Soap:
             raise Exception("Use function CBR_Soap.get_exchange_rates() to download exchange rates")
         self.operation = operation
         self.args = args
-        self.make_xml_param_string(self.operation)
-        self.body = self.make_body()
-        self.headers = self.make_headers()
-        response = requests.post(self.wsdl_info[self.operation]['url'], data=self.body, headers=self.headers)
+        params = self.make_params_dict(self.operation)
+        response_xml = self._call_operation(self.operation, params)
 
         if len(tag) > 0:
             name = tag
         elif name in self.tags.keys():
             name = self.tags[name]
         try:
-            df = pd.read_xml(response.content, xpath=f".//{name}/*")
+            df = pd.read_xml(response_xml, xpath=f".//{name}/*")
         except ValueError:
             try:
-                df = pd.read_xml(response.content, xpath=f".//{name}")
+                df = pd.read_xml(response_xml, xpath=f".//{name}")
             except ValueError:
-                return response.content
+                return response_xml
         name = operation[:-3] if operation[-3:] == "XML" else operation
         if name in self.tr_dict.keys():
             df = self.simple_transform(df, name)
@@ -162,11 +176,9 @@ class CBR_Soap:
         self.operation = 'GetCursDynamic'
         Vcode = CBR_Soap().get_data('EnumValutes', False).set_index('VcharCode').loc[currency, 'Vcode']
         self.args = [dateFrom, dateTo, Vcode]
-        self.make_xml_param_string(self.operation)
-        self.body = self.make_body()
-        self.headers = self.make_headers()
-        response = requests.post(self.wsdl_info[self.operation]['url'], data=self.body, headers=self.headers)
-        df = pd.read_xml(response.content, xpath=f".//ValuteData/*")
+        params = self.make_params_dict(self.operation)
+        response_xml = self._call_operation(self.operation, params)
+        df = pd.read_xml(response_xml, xpath=f".//ValuteData/*")
         df['Vcurs'] /= df.loc[0, 'Vnom']
         df['CursDate'] = df['CursDate'].apply(lambda x: dt.strptime(x[:10], "%Y-%m-%d"))
         df = df.loc[:, ['CursDate', 'Vcurs']].set_index('CursDate').sort_index()
@@ -189,11 +201,9 @@ class CBR_Soap:
     def get_discounts(self, currency="RUB", date=""):
         self.operation = 'IDRepo' + currency + 'XML'
         self.args = [date]
-        self.make_xml_param_string(self.operation)
-        self.body = self.make_body()
-        self.headers = self.make_headers()
-        response = requests.post(self.wsdl_info[self.operation]['url'], data=self.body, headers=self.headers)
-        root = ET.fromstring(response.content)
+        params = self.make_params_dict(self.operation)
+        response_xml = self._call_operation(self.operation, params)
+        root = ET.fromstring(response_xml)
         di = xmltodict.parse(root.findall(".//SRC")[0].text)
         cols = []
         for col in di['InfoDirectRepo' + currency]['head']['dt']:

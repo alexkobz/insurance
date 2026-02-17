@@ -4,6 +4,7 @@
 /.idea/
 /venv/
 /.venv/
+.env
 /data/output/
 /python39/
 /python312/

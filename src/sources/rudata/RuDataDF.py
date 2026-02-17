@@ -61,9 +61,15 @@ class RuDataDF(RuDataStrategy):
             df: pd.DataFrame = pd.DataFrame()
         return df
 
-    def _check_account(self) -> None:
-        if not self._authorized:
-            raise ValueError("Authorization header is not set. Run Account()")
+    @classmethod
+    def set_authorized(cls, value: bool):
+        cls._authorized = value
+
+    @classmethod
+    def _check_account(cls) -> None:
+        pass
+        # if not cls._authorized:
+        #     raise ValueError("Authorization header is not set. Run Account()")
 
     def payloads(self):
         raise NotImplemented
