@@ -184,10 +184,8 @@ class RUPriceHistory(RuDataPagesDF):
     url = "https://dh2.efir-net.ru/v2/RUPrice/History"
 
     def payloads(self):
-        # dateFrom = (dt.strptime(last_day_month_str, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
-        dateFrom = '2025-12-20'
-        dateTo = '2026-01-10'
-        # dateTo = last_day_month_str
+        dateFrom = (dt.strptime(last_day_month_str, "%Y-%m-%d") - timedelta(days=30)).strftime("%Y-%m-%d")
+        dateTo = last_day_month_str
         for pageNum in range(1, 10_000, LIMIT):
             yield [
                 {
